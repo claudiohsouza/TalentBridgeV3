@@ -1,168 +1,136 @@
 # TalentBridge
 
-TalentBridge é uma plataforma dedicada a conectar jovens talentos com oportunidades de emprego, estágio e capacitação. O sistema oferece uma interface integrada para instituições de ensino, empresas e instituições contratantes colaborarem no desenvolvimento profissional de jovens.
+TalentBridge é uma plataforma que conecta jovens talentos com oportunidades de emprego e estágio, facilitando a interação entre instituições de ensino, empresas e instituições contratantes.
 
-## 🚀 Tecnologias Utilizadas
+## 🚀 Tecnologias
 
 ### Backend
 - Node.js com Express
 - PostgreSQL
 - JWT para autenticação
 - Winston para logging
-- Joi para validação de dados
+- Joi para validação
 
 ### Frontend
 - React com TypeScript
-- React Router para navegação
-- Context API para gerenciamento de estado
-- TailwindCSS para estilização
-- Axios para requisições HTTP
+- React Router
+- Context API
+- TailwindCSS
+- Axios
 
 ## 📋 Pré-requisitos
 
-- Node.js 18.x ou superior
-- PostgreSQL 14.x ou superior
-- npm 8.x ou superior
+- Node.js 18+
+- PostgreSQL 14+
+- npm 8+
 
-## 🔧 Instalação e Configuração
+## 🔧 Instalação
 
 ### Banco de Dados
-1. Instale o PostgreSQL e crie um banco de dados chamado `Data1`
+1. Instale o PostgreSQL
+2. Crie um banco de dados chamado `Data1`
+3. Execute o script `backend/db/init.sql` para criar as tabelas
 
 ### Backend
-1. Navegue até o diretório `backend`:
-   ```
+1. Entre no diretório `backend`:
+   ```bash
    cd backend
    ```
 
 2. Instale as dependências:
-   ```
+   ```bash
    npm install
    ```
 
-3. Configuração do ambiente:
-   O projeto já contém um arquivo `.env` para desenvolvimento. Para produção, você deve criar seu próprio arquivo com configurações seguras:
+3. Configure o arquivo `.env`:
    ```
-   # Configurações do Banco de Dados
+   FRONTEND_URL=http://localhost:3000
    DB_USER=postgres
-   DB_PASSWORD=suasenhasegura
+   DB_PASSWORD=1234
    DB_HOST=localhost
-   DB_NAME=Data1
    DB_PORT=5432
-
-   # Configurações do Servidor
-   PORT=3001
-   NODE_ENV=production
-   FRONTEND_URL=https://seu-dominio.com
-
-   # Configurações de Segurança
-   JWT_SECRET=sua_chave_secreta_de_producao_deve_ser_longa_e_aleatoria
-
-   # Configurações de Taxa de Limite (Rate Limiting)
-   RATE_LIMIT_WINDOW_MS=900000  # 15 minutos
+   DB_NAME=Data1
+   JWT_SECRET=sua_chave_secreta
+   NODE_ENV=development
+   RATE_LIMIT_WINDOW_MS=900000
    RATE_LIMIT_MAX=100
-
-   # Configurações de Log
    LOG_LEVEL=info
+   PORT=3001
    ```
 
 4. Inicie o servidor:
-   ```
-   npm start
-   ```
-   Para desenvolvimento com reload automático:
-   ```
+   ```bash
    npm run dev
    ```
 
-5. Depois que o servidor estiver rodando, inicialize o banco de dados com as opções padrão:
-   ```
-   npm run init-opcoes
-   ```
-   Nota: É importante que o servidor esteja em execução antes de executar este script, pois ele se comunica com a API do servidor.
-
 ### Frontend
-1. Navegue até o diretório `frontend`:
-   ```
+1. Entre no diretório `frontend`:
+   ```bash
    cd frontend
    ```
 
 2. Instale as dependências:
-   ```
+   ```bash
    npm install
    ```
 
-3. Inicie o servidor de desenvolvimento:
-   ```
+3. Inicie o servidor:
+   ```bash
    npm start
    ```
 
-### Inicialização Rápida (Windows)
-Use o script `start-dev.ps1` no diretório `scripts` para iniciar tanto o backend quanto o frontend em uma única etapa:
-```
-.\scripts\start-dev.ps1
-```
+## 👥 Papéis do Sistema
+
+1. **Instituição de Ensino**
+   - Cadastra e gerencia jovens
+   - Avalia desempenho dos jovens
+   - Visualiza oportunidades disponíveis
+
+2. **Chefe de Empresa**
+   - Cria oportunidades de emprego/estágio
+   - Avalia jovens
+   - Gerencia recomendações
+
+3. **Instituição Contratante**
+   - Visualiza jovens e oportunidades
+   - Gerencia recomendações
+   - Acompanha desenvolvimento dos jovens
+
+## 🔐 Segurança
+
+- Autenticação via JWT
+- Senhas criptografadas com bcrypt
+- Rate limiting para proteção contra ataques
+- Validação de dados com Joi
+- Proteção CORS configurável
 
 ## 📦 Estrutura do Projeto
 
 ### Backend
-- `server.js`: Ponto de entrada da aplicação
-- `routes/`: Rotas da API
-- `middleware/`: Middlewares Express
-- `controllers/`: Lógica de negócios
-- `models/`: Modelos de dados
-- `db/`: Configurações de banco de dados
+- `routes/`: Endpoints da API
+- `middleware/`: Middlewares de autenticação e validação
+- `db/`: Scripts e configurações do banco de dados
+- `config/`: Configurações do sistema
 
 ### Frontend
-- `src/components/`: Componentes React reutilizáveis
+- `src/components/`: Componentes React
 - `src/pages/`: Páginas da aplicação
-- `src/contexts/`: Contextos para gerenciamento de estado (AuthContext, etc.)
-- `src/services/`: Serviços para chamadas de API
-- `src/types/`: Definições de tipos TypeScript
-- `src/utils/`: Funções utilitárias
+- `src/contexts/`: Gerenciamento de estado
+- `src/services/`: Serviços de API
+- `src/types/`: Definições TypeScript
 
-## 🎨 Sistema de Design
+## 🎨 Design System
 
-O frontend utiliza um sistema de design consistente baseado em TailwindCSS:
-
-- Classes de botões: `btn-primary`, `btn-secondary`
-- Classes de entrada: `input-field`
-- Classes de cartão: `card`
-- Animações: `animate-fade-in`, `animate-slide-up`, `animate-slide-down`
-- Loading spinner: `loading-spinner`
-
-## 👥 Papéis e Permissões
-
-O sistema possui quatro tipos principais de usuários:
-
-1. **Instituição de Ensino**: Gerencia jovens e visualiza oportunidades
-2. **Chefe de Empresa**: Administra jovens dentro da empresa
-3. **Instituição Contratante**: Cria e gerencia oportunidades
-
-## 🔐 Autenticação e Segurança
-
-O sistema utiliza:
-- JWT (JSON Web Tokens) para autenticação
-- Senhas criptografadas com bcrypt
-- Rate limiting para prevenção de ataques
-- Proteção contra ataques comuns usando helmet
+O frontend utiliza TailwindCSS com um tema personalizado:
+- Cores principais: Indigo e Sky Blue
+- Fundo escuro com cards em tons de cinza
+- Animações suaves para transições
+- Componentes responsivos
 
 ## 📫 Contribuição
 
 1. Faça um fork do projeto
-2. Crie sua branch de feature: `git checkout -b feature/nova-funcionalidade`
+2. Crie uma branch: `git checkout -b feature/nova-funcionalidade`
 3. Commit suas mudanças: `git commit -m 'Adiciona nova funcionalidade'`
 4. Push para a branch: `git push origin feature/nova-funcionalidade`
-5. Abra um Pull Request
-
-## 📚 Scripts Utilitários
-
-### Scripts de Inicialização
-- `init-opcoes.js`: Inicializa as opções do sistema com valores padrão (requer servidor em execução)
-- `import-database.js`: Importa dados para o banco de dados
-
-### Verificação de Código
-Execute o script de verificação para identificar problemas comuns:
-```
-node scripts/lint-check.js
-``` 
+5. Abra um Pull Request 
