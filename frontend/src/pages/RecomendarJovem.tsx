@@ -4,6 +4,7 @@ import { Jovem } from '../types';
 import { jovemService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { avaliacoesService } from '../services/avaliacoes';
+import { oportunidadeService } from '../services/api';
 
 const RecomendarJovem: React.FC = () => {
   const { id: oportunidadeId } = useParams<{ id: string }>();
@@ -76,28 +77,16 @@ const RecomendarJovem: React.FC = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    if (!selectedJovem || !justificativa.trim()) {
+    if (!selectedJovem || !justificativa.trim() || !oportunidadeId) {
       setError('Selecione um jovem e preencha a justificativa.');
       return;
     }
     setLoading(true);
     try {
-      await fetch('/api/recomendacoes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          jovem_id: selectedJovem,
-          oportunidade_id: oportunidadeId,
-          justificativa
-        })
-      }).then(async res => {
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || data.message || 'Erro ao recomendar jovem.');
-        }
+      await oportunidadeService.recomendarJovem({
+        jovem_id: selectedJovem,
+        oportunidade_id: oportunidadeId,
+        justificativa
       });
       setSuccess('Recomendação enviada com sucesso!');
       setTimeout(() => navigate(-1), 1500);
