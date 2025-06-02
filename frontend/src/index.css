@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Removed @tailwind directives */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  body {
+    background-color: #0A0A0A;
+    color: #FFFFFF;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    padding: 0.5rem 1rem;
+    background-color: #6366F1;
+    color: white;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+    font-weight: 500;
+  }
+  .btn-primary:hover {
+    background-color: #4F46E5;
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .btn-secondary {
+    padding: 0.5rem 1rem;
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+    font-weight: 500;
+    border: 1px solid #2E2E2E;
+  }
+  .btn-secondary:hover {
+    background-color: #1E1E1E;
+  }
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+    border: 1px solid #2E2E2E;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus {
+    border-color: #6366F1;
+    outline: none;
+    box-shadow: 0 0 0 1px #6366F1;
+  }
+  .input-field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .card {
+    background-color: #1E1E1E;
+    border-radius: 0.5rem;
+    border: 1px solid #2E2E2E;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 1rem;
+  }
+  
+  .section-subtitle {
+    color: #A3A3A3;
+    margin-bottom: 2rem;
+  }
+
+  .page-transition {
+    transition: all 0.3s ease-in-out;
+  }
+
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+    border-radius: 9999px;
+    border: 2px solid #1A1A1A;
+    border-top-color: #6366F1;
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22C55E;
+  }
+
+  .badge-error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+  }
+
+  .badge-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #F59E0B;
+  }
+
+  .badge-default {
+    background-color: rgba(115, 115, 115, 0.1);
+    color: #737373;
+  }
+
+  select.input-field {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+    border: 1px solid #2E2E2E;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    width: 100%;
+    transition: border-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+  select.input-field:focus {
+    border-color: #6366F1;
+    outline: none;
+    box-shadow: 0 0 0 1px #6366F1;
+  }
+  select.input-field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  select.input-field option {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+  }
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #2E2E2E;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #737373;
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
