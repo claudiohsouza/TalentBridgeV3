@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Oportunidade, Recomendacao } from '../types';
+import { oportunidadeService } from '../services/api';
 
 const OportunidadeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,17 +16,7 @@ const OportunidadeDetails: React.FC = () => {
     const fetchOportunidadeDetails = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/oportunidades/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Erro ao carregar detalhes da oportunidade');
-        }
-
-        const data = await response.json();
+        const data = await oportunidadeService.getOportunidade(Number(id));
         setOportunidade(data);
         setLoading(false);
       } catch (error) {

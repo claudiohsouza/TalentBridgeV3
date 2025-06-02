@@ -357,6 +357,21 @@ export const oportunidadeService = {
       console.error(`[Oportunidade Service] Erro ao excluir oportunidade ID ${id}:`, error);
       throw error;
     }
+  },
+
+  // Novo método para recomendar jovem
+  recomendarJovem: async ({ jovem_id, oportunidade_id, justificativa }: { jovem_id: string | number, oportunidade_id: string | number, justificativa: string }) => {
+    try {
+      const response = await api.post('/api/recomendacoes', {
+        jovem_id,
+        oportunidade_id,
+        justificativa
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[Oportunidade Service] Erro ao recomendar jovem:', error);
+      throw error;
+    }
   }
 };
 
