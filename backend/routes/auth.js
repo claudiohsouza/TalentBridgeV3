@@ -161,20 +161,9 @@ router.post('/registro', validate(registroSchema), async (req, res, next) => {
       if (papel === 'instituicao_ensino') {
         console.log('[Registro] Inserindo dados de instituição de ensino');
         await client.query(
-          'INSERT INTO instituicoes_ensino (usuario_id, tipo, nome, localizacao, qtd_alunos) VALUES ($1, $2, $3, $4, $5)',
-          [usuarioId, dadosPerfil.tipo, nome, localizacao, dadosPerfil.qtd_alunos]
+          'INSERT INTO instituicoes_ensino (usuario_id, tipo, nome, localizacao, qtd_alunos, areas_ensino) VALUES ($1, $2, $3, $4, $5, $6)',
+          [usuarioId, dadosPerfil.tipo, nome, localizacao, dadosPerfil.qtd_alunos, dadosPerfil.areas_ensino || []]
         );
-
-        // Inserir áreas de ensino
-        if (dadosPerfil.areas_ensino && dadosPerfil.areas_ensino.length > 0) {
-          console.log('[Registro] Inserindo áreas de ensino:', dadosPerfil.areas_ensino);
-          for (const area of dadosPerfil.areas_ensino) {
-            await client.query(
-              'INSERT INTO areas_ensino_instituicao (instituicao_id, area) VALUES ($1, $2)',
-              [usuarioId, area]
-            );
-          }
-        }
       } else if (papel === 'chefe_empresa') {
         console.log('[Registro] Inserindo dados de chefe de empresa');
         await client.query(
