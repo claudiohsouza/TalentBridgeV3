@@ -175,6 +175,16 @@ INSERT INTO oportunidades (titulo, descricao, tipo, area, requisitos, beneficios
 ('Analista de Qualidade Júnior', 'Vaga para atuar em controle de qualidade de alimentos em indústria moderna.', 'CLT', 'Qualidade', ARRAY['Excel', 'Gestão', 'Comunicação'], ARRAY['Plano de Saúde', 'Vale Alimentação'], 'R$ 2.800,00', 'Presencial - RJ', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'FoodNow'), '2024-06-10', '2024-12-10', 1),
 ('Estágio em Psicologia Organizacional', 'Acompanhar projetos de desenvolvimento humano e clima organizacional.', 'Estágio', 'Recursos Humanos', ARRAY['Psicologia', 'Comunicação', 'Empatia'], ARRAY['Vale Transporte', 'Bolsa Auxílio'], 'R$ 1.200,00', 'Presencial - SP', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), '2024-07-01', '2024-12-31', 1);
 
+-- Exemplos adicionais de oportunidades úteis
+INSERT INTO oportunidades (titulo, descricao, tipo, area, requisitos, beneficios, salario, local, status, empresa_id, data_inicio, data_fim, vagas_disponiveis) VALUES
+('Estágio em Análise de Dados', 'Auxiliar na coleta, tratamento e análise de dados para apoiar decisões estratégicas.', 'estagio', 'analise_dados', ARRAY['Excel', 'Python', 'Power BI', 'Raciocínio lógico'], ARRAY['Vale Transporte', 'Bolsa Auxílio', 'Seguro de Vida'], 'R$ 1.200,00', 'Remoto', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), '2024-08-01', '2025-01-31', 3),
+('Desenvolvedor Back-end Júnior', 'Atuar no desenvolvimento e manutenção de APIs e sistemas internos.', 'clt', 'desenvolvimento_software', ARRAY['Node.js', 'PostgreSQL', 'APIs REST', 'Git'], ARRAY['Plano de Saúde', 'Vale Refeição', 'Auxílio Home Office'], 'R$ 3.000,00', 'Híbrido - São Paulo', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), '2024-09-01', '2025-09-01', 2),
+('Analista de Marketing Digital', 'Planejar e executar campanhas digitais, análise de métricas e SEO.', 'clt', 'marketing_digital', ARRAY['Google Ads', 'SEO', 'Redes Sociais', 'Analytics'], ARRAY['Vale Transporte', 'Vale Alimentação', 'Day Off Aniversário'], 'R$ 2.500,00', 'Presencial - Belo Horizonte', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'FoodNow'), '2024-08-15', '2025-08-15', 1),
+('Estágio em Engenharia Mecânica', 'Acompanhar projetos de manutenção e automação industrial.', 'estagio', 'engenharia_mecanica', ARRAY['AutoCAD', 'SolidWorks', 'Noções de manutenção'], ARRAY['Vale Transporte', 'Refeitório no local'], 'R$ 1.100,00', 'Presencial - Campinas', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'FoodNow'), '2024-09-10', '2025-03-10', 2),
+('Assistente Administrativo', 'Auxiliar nas rotinas administrativas, atendimento e organização de documentos.', 'clt', 'administracao', ARRAY['Pacote Office', 'Organização', 'Boa comunicação'], ARRAY['Vale Transporte', 'Vale Alimentação'], 'R$ 1.800,00', 'Presencial - Rio de Janeiro', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'FoodNow'), '2024-08-20', '2025-02-20', 1),
+('Designer Gráfico Freelancer', 'Criação de peças para redes sociais e campanhas digitais.', 'freelancer', 'design_grafico', ARRAY['Photoshop', 'Illustrator', 'Portfólio'], ARRAY['Horário Flexível'], 'A combinar', 'Remoto', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), '2024-08-05', '2024-12-31', 1),
+('Estágio em Psicologia Escolar', 'Apoiar projetos de orientação e acompanhamento de alunos.', 'estagio', 'psicologia', ARRAY['Cursando Psicologia', 'Empatia', 'Boa comunicação'], ARRAY['Vale Transporte', 'Bolsa Auxílio'], 'R$ 1.000,00', 'Presencial - São Paulo', 'Aberta', (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), '2024-08-20', '2025-01-20', 1);
+
 -- 8. HISTÓRICO DE DESENVOLVIMENTO
 INSERT INTO historico_desenvolvimento (jovem_id, tipo, titulo, descricao, data_inicio, data_conclusao, instituicao, comprovante_url, validado) VALUES
 ((SELECT id FROM jovens WHERE email = 'joao.silva@example.com'), 'certificacao', 'Certificação em Desenvolvimento Web', 'Curso completo de desenvolvimento web com foco em React e Node.js', '2023-12-01', '2024-01-15', 'Alura', 'https://exemplo.com/certificado1.pdf', true),
@@ -211,4 +221,46 @@ INSERT INTO recomendacoes (jovem_id, oportunidade_id, recomendador_tipo, recomen
 INSERT INTO jovens_chefes_empresas (jovem_id, chefe_empresa_id, status, data_inicio) VALUES
 ((SELECT id FROM jovens WHERE email = 'joao.silva@example.com'), (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), 'Contratado', '2024-07-01'),
 ((SELECT id FROM jovens WHERE email = 'maria.oliveira@example.com'), (SELECT id FROM chefes_empresas WHERE empresa = 'TechX'), 'Estagiário', '2024-07-10'),
-((SELECT id FROM jovens WHERE email = 'lucas.pereira@example.com'), (SELECT id FROM chefes_empresas WHERE empresa = 'FoodNow'), 'Contratado', '2024-07-15'); 
+((SELECT id FROM jovens WHERE email = 'lucas.pereira@example.com'), (SELECT id FROM chefes_empresas WHERE empresa = 'FoodNow'), 'Contratado', '2024-07-15');
+
+-- Novos jovens para oportunidades criadas
+
+-- 1. JOVENS
+INSERT INTO jovens (nome, email, idade, formacao, curso, habilidades, interesses, planos_futuros, status) VALUES
+('Bruna Almeida', 'bruna.almeida@example.com', 22, 'Superior', 'Engenharia Mecânica', ARRAY['AutoCAD', 'SolidWorks', 'Noções de manutenção'], ARRAY['Engenharia Mecânica', 'Automação'], 'Quero atuar em projetos de manutenção e automação industrial.', 'Ativo'),
+('Felipe Torres', 'felipe.torres@example.com', 20, 'Superior', 'Ciência da Computação', ARRAY['Node.js', 'PostgreSQL', 'APIs REST', 'Git'], ARRAY['Desenvolvimento Back-end', 'APIs'], 'Busco crescer como desenvolvedor back-end em projetos inovadores.', 'Ativo'),
+('Juliana Ramos', 'juliana.ramos@example.com', 19, 'Superior', 'Publicidade e Propaganda', ARRAY['Google Ads', 'SEO', 'Redes Sociais', 'Analytics'], ARRAY['Marketing Digital', 'Comunicação'], 'Quero me especializar em campanhas digitais e análise de métricas.', 'Ativo'),
+('Rafael Lima', 'rafael.lima@example.com', 18, 'Técnico', 'Técnico em Administração', ARRAY['Pacote Office', 'Organização', 'Boa comunicação'], ARRAY['Administração', 'Gestão'], 'Pretendo atuar em rotinas administrativas e atendimento.', 'Ativo'),
+('Camila Souza', 'camila.souza@example.com', 21, 'Superior', 'Design Gráfico', ARRAY['Photoshop', 'Illustrator', 'Portfólio'], ARRAY['Design Gráfico', 'Criação'], 'Quero trabalhar com criação de peças para redes sociais.', 'Ativo'),
+('Eduardo Martins', 'eduardo.martins@example.com', 20, 'Superior', 'Psicologia', ARRAY['Cursando Psicologia', 'Empatia', 'Boa comunicação'], ARRAY['Psicologia Escolar', 'Educação'], 'Busco experiência em psicologia escolar e orientação de alunos.', 'Ativo'),
+('Larissa Figueiredo', 'larissa.figueiredo@example.com', 21, 'Superior', 'Estatística', ARRAY['Excel', 'Python', 'Power BI', 'Raciocínio lógico'], ARRAY['Análise de Dados', 'Tecnologia'], 'Quero atuar em análise de dados para apoiar decisões estratégicas.', 'Ativo');
+
+-- 2. VÍNCULOS COM INSTITUIÇÃO DE ENSINO
+INSERT INTO jovens_instituicoes (jovem_id, instituicao_id, status, data_inicio) VALUES
+((SELECT id FROM jovens WHERE email = 'bruna.almeida@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01'),
+((SELECT id FROM jovens WHERE email = 'felipe.torres@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01'),
+((SELECT id FROM jovens WHERE email = 'juliana.ramos@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01'),
+((SELECT id FROM jovens WHERE email = 'rafael.lima@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01'),
+((SELECT id FROM jovens WHERE email = 'camila.souza@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01'),
+((SELECT id FROM jovens WHERE email = 'eduardo.martins@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01'),
+((SELECT id FROM jovens WHERE email = 'larissa.figueiredo@example.com'), (SELECT id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 'aprovado', '2024-01-01');
+
+-- 3. HISTÓRICO DE DESENVOLVIMENTO
+INSERT INTO historico_desenvolvimento (jovem_id, tipo, titulo, descricao, data_inicio, data_conclusao, instituicao, comprovante_url, validado) VALUES
+((SELECT id FROM jovens WHERE email = 'bruna.almeida@example.com'), 'curso', 'Projeto de Automação', 'Participação em projeto de automação industrial com uso de SolidWorks.', '2023-08-01', '2023-12-01', 'SENAI', 'https://exemplo.com/certificado_bruna.pdf', true),
+((SELECT id FROM jovens WHERE email = 'felipe.torres@example.com'), 'certificacao', 'Certificação Node.js', 'Curso intensivo de desenvolvimento back-end com Node.js.', '2023-09-01', '2023-11-30', 'Alura', 'https://exemplo.com/certificado_felipe.pdf', true),
+((SELECT id FROM jovens WHERE email = 'juliana.ramos@example.com'), 'projeto', 'Campanha Digital', 'Planejamento e execução de campanha digital para ONG.', '2023-10-01', '2023-12-15', 'Projeto Acadêmico', 'https://exemplo.com/certificado_juliana.pdf', true),
+((SELECT id FROM jovens WHERE email = 'rafael.lima@example.com'), 'curso', 'Gestão Administrativa', 'Curso de rotinas administrativas e atendimento ao cliente.', '2023-07-01', '2023-09-30', 'SENAC', 'https://exemplo.com/certificado_rafael.pdf', true),
+((SELECT id FROM jovens WHERE email = 'camila.souza@example.com'), 'projeto', 'Portfólio de Design', 'Desenvolvimento de portfólio com peças para redes sociais.', '2023-11-01', '2023-12-20', 'Projeto Pessoal', 'https://exemplo.com/certificado_camila.pdf', true),
+((SELECT id FROM jovens WHERE email = 'eduardo.martins@example.com'), 'curso', 'Psicologia Escolar', 'Curso de extensão em psicologia escolar.', '2023-09-01', '2023-12-01', 'USP', 'https://exemplo.com/certificado_eduardo.pdf', true),
+((SELECT id FROM jovens WHERE email = 'larissa.figueiredo@example.com'), 'certificacao', 'Análise de Dados com Python', 'Certificação em análise de dados utilizando Python e Power BI.', '2023-10-01', '2023-12-15', 'Coursera', 'https://exemplo.com/certificado_larissa.pdf', true);
+
+-- 4. AVALIAÇÕES (usando categorias já existentes)
+INSERT INTO avaliacoes (jovem_id, avaliador_tipo, avaliador_id, categoria_id, nota, comentario, criado_em) VALUES
+((SELECT id FROM jovens WHERE email = 'bruna.almeida@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 1, 9, 'Ótima desenvoltura em projetos de automação.', '2024-03-01'),
+((SELECT id FROM jovens WHERE email = 'felipe.torres@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 1, 10, 'Excelente domínio de back-end.', '2024-03-01'),
+((SELECT id FROM jovens WHERE email = 'juliana.ramos@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 2, 9, 'Muito criativa em campanhas digitais.', '2024-03-01'),
+((SELECT id FROM jovens WHERE email = 'rafael.lima@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 3, 8, 'Bom trabalho em equipe e organização.', '2024-03-01'),
+((SELECT id FROM jovens WHERE email = 'camila.souza@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 5, 10, 'Ótima criatividade e domínio de ferramentas de design.', '2024-03-01'),
+((SELECT id FROM jovens WHERE email = 'eduardo.martins@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 2, 9, 'Excelente comunicação e empatia.', '2024-03-01'),
+((SELECT id FROM jovens WHERE email = 'larissa.figueiredo@example.com'), 'instituicao_ensino', (SELECT usuario_id FROM instituicoes_ensino WHERE nome = 'ETEC São Paulo'), 1, 10, 'Grande potencial em análise de dados.', '2024-03-01'); 

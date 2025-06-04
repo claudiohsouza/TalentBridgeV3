@@ -5,6 +5,64 @@ import { ForbiddenError, NotFoundError, DatabaseError } from '../middleware/erro
 
 const router = express.Router();
 
+// Listar jovens com recomendações e oportunidades (para instituição contratante)
+router.get('/recomendados', authMiddleware, checkRole(['instituicao_contratante']), async (req, res) => {
+  try {
+    // Buscar todos os jovens com suas recomendações e oportunidades em uma única query
+    const result = await req.db.query(`
+      WITH jovens_recomendacoes AS (
+        SELECT 
+          j.*,
+          COALESCE(
+            json_agg(
+              CASE 
+                WHEN r.id IS NOT NULL THEN
+                  json_build_object(
+                    'id', r.id,
+                    'status', r.status,
+                    'oportunidade', json_build_object(
+                      'id', o.id,
+                      'titulo', o.titulo,
+                      'status', o.status
+                    )
+                  )
+                ELSE NULL
+              END
+            ) FILTER (WHERE r.id IS NOT NULL),
+            '[]'::json
+          ) as recomendacoes
+        FROM jovens j
+        LEFT JOIN recomendacoes r ON j.id = r.jovem_id
+        LEFT JOIN oportunidades o ON r.oportunidade_id = o.id
+        GROUP BY j.id
+      )
+      SELECT 
+        id,
+        nome,
+        email,
+        idade,
+        formacao,
+        curso,
+        habilidades,
+        interesses,
+        planos_futuros,
+        status,
+        recomendacoes
+      FROM jovens_recomendacoes
+      WHERE jsonb_array_length(recomendacoes::jsonb) > 0
+      ORDER BY nome
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro ao buscar jovens recomendados:', error);
+    res.status(500).json({ 
+      message: 'Erro ao buscar jovens recomendados',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Listar jovens - todos os tipos de usuário podem visualizar
 router.get('/', authMiddleware, checkRole(['instituicao_ensino', 'chefe_empresa', 'instituicao_contratante']), async (req, res) => {
   try {

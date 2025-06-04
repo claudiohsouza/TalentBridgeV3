@@ -66,7 +66,15 @@ const JovensList: React.FC = () => {
         {/* Botão de Voltar */}
         <div className="mb-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              const papelParaUrl = {
+                'instituicao_ensino': 'instituicao-ensino',
+                'chefe_empresa': 'chefe-empresa',
+                'instituicao_contratante': 'instituicao-contratante'
+              };
+              const urlPapel = user?.papel ? papelParaUrl[user.papel] : '';
+              navigate(`/${urlPapel}`);
+            }}
             className="btn-secondary"
           >
             Voltar

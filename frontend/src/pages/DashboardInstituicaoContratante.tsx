@@ -202,7 +202,7 @@ const DashboardInstituicaoContratante: React.FC = () => {
               {loadingJovens ? '-' : jovens.length}
             </p>
             <Link 
-              to="/instituicao-contratante/jovens" 
+              to="/instituicao-contratante/jovens-recomendados" 
               className="text-cursor-primary text-sm mt-2 inline-flex items-center hover:text-cursor-primary-dark transition-colors"
             >
               Ver todos
@@ -229,7 +229,7 @@ const DashboardInstituicaoContratante: React.FC = () => {
               </div>
             </button>
             <button
-              onClick={() => navigate('/instituicao-contratante/jovens')}
+              onClick={() => navigate('/instituicao-contratante/jovens-recomendados')}
               className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors"
             >
               <div className="text-center">

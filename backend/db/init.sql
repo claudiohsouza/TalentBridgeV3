@@ -28,20 +28,6 @@ CREATE TABLE IF NOT EXISTS opcoes_sistema (
     UNIQUE(categoria, valor)
 );
 
--- Tabela de Áreas de Ensino por Instituição
-CREATE TABLE IF NOT EXISTS areas_ensino_instituicao (
-    id SERIAL PRIMARY KEY,
-    instituicao_id INTEGER REFERENCES instituicoes_ensino(id) ON DELETE CASCADE,
-    area_ensino VARCHAR(100) NOT NULL,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(instituicao_id, area_ensino)
-);
-
--- =========================
--- TABELAS DE USUÁRIOS E PERFIS
--- =========================
-
 -- Tabela de Usuários
 CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
@@ -100,10 +86,6 @@ CREATE TABLE IF NOT EXISTS instituicoes_contratantes (
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =========================
--- TABELAS PRINCIPAIS
--- =========================
-
 -- Tabela de Jovens
 CREATE TABLE IF NOT EXISTS jovens (
     id SERIAL PRIMARY KEY,
@@ -141,6 +123,10 @@ CREATE TABLE IF NOT EXISTS oportunidades (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =========================
+-- TABELAS DE USUÁRIOS E PERFIS
+-- =========================
 
 -- Tabela de Histórico de Desenvolvimento
 CREATE TABLE IF NOT EXISTS historico_desenvolvimento (

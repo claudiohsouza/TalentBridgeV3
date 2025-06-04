@@ -59,6 +59,8 @@ export interface Jovem {
   idade: number;
   formacao: string;
   curso?: string;
+  tipo?: string;
+  area?: string;
   habilidades: string[];
   interesses: string[];
   planos_futuros: string;
@@ -125,6 +127,7 @@ export interface OportunidadeInput {
   titulo: string;
   descricao: string;
   tipo: string;
+  area: string;
   requisitos?: string[];
   beneficios?: string[];
   data_inicio?: string;

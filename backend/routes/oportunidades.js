@@ -21,7 +21,6 @@ router.get('/', authMiddleware, async (req, res, next) => {
       SELECT o.*, 
              ce.empresa as empresa_nome,
              u.nome as empresa_representante,
-             o.area,
              (SELECT COUNT(*) FROM recomendacoes r WHERE r.oportunidade_id = o.id) as total_recomendacoes
       FROM oportunidades o
       JOIN chefes_empresas ce ON o.empresa_id = ce.id
@@ -190,6 +189,21 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
         oportunidade.beneficios = [];
       }
     }
+    
+    // Garantir que o campo area existe
+    if (!oportunidade.area) {
+      oportunidade.area = 'Não especificada';
+    }
+    
+    // Converter total_recomendacoes para número
+    oportunidade.total_recomendacoes = parseInt(oportunidade.total_recomendacoes || 0, 10);
+    
+    // Calcular vagas_preenchidas
+    const vagasPreenchidasResult = await req.db.query(
+      'SELECT COUNT(*) FROM jovens_chefes_empresas WHERE chefe_empresa_id = $1 AND status IN (\'Contratado\', \'Estagiário\')',
+      [oportunidade.empresa_id]
+    );
+    oportunidade.vagas_preenchidas = parseInt(vagasPreenchidasResult.rows[0].count, 10);
     
     // Verificar se o usuário é o dono da oportunidade
     let isOwner = false;

@@ -9,6 +9,18 @@ const etapas = [
   'Detalhes Finais'
 ];
 
+// Função utilitária para formatar nomes (primeira letra maiúscula e espaços)
+function formatarNome(valor: string): string {
+  if (!valor) return '';
+  // Substitui underscores/traços por espaço, separa camelCase, e capitaliza cada palavra
+  return valor
+    .replace(/([a-z])([A-Z])/g, '$1 $2') // camelCase para espaço
+    .replace(/[_-]/g, ' ') // snake_case/kebab-case para espaço
+    .split(' ')
+    .map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1).toLowerCase())
+    .join(' ');
+}
+
 const NovaOportunidade: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -122,6 +134,7 @@ const NovaOportunidade: React.FC = () => {
         titulo: formData.titulo,
         descricao: formData.descricao,
         tipo: formData.tipo,
+        area: formData.area,
         requisitos: formData.requisitos,
         beneficios: formData.beneficios,
         data_inicio: formData.data_inicio || undefined,
@@ -179,7 +192,7 @@ const NovaOportunidade: React.FC = () => {
                   >
                     <option value="">Selecione um tipo</option>
                     {tiposVaga.map(tipo => (
-                      <option key={tipo} value={tipo}>{tipo}</option>
+                      <option key={tipo} value={tipo}>{formatarNome(tipo)}</option>
                     ))}
                   </select>
                   {touched.tipo && errors.tipo && <p className="text-cursor-error text-xs mt-1">{errors.tipo}</p>}
@@ -197,7 +210,7 @@ const NovaOportunidade: React.FC = () => {
                   >
                     <option value="">Selecione uma área</option>
                     {areasAtuacao.map(area => (
-                      <option key={area} value={area}>{area}</option>
+                      <option key={area} value={area}>{formatarNome(area)}</option>
                     ))}
                   </select>
                   {touched.area && errors.area && <p className="text-cursor-error text-xs mt-1">{errors.area}</p>}

@@ -20,6 +20,7 @@ import OportunidadeDetails from './pages/OportunidadeDetails';
 import NovaOportunidade from './pages/NovaOportunidade';
 import NovoJovem from './pages/NovoJovem';
 import RecomendarJovem from './pages/RecomendarJovem';
+import JovensRecomendados from './pages/JovensRecomendados';
 
 // Componente para rotas protegidas
 type ProtectedRouteProps = {
@@ -136,6 +137,10 @@ function App() {
           <Route 
             path="/instituicao-contratante/oportunidades/:id" 
             element={<ProtectedRoute allowedRole="instituicao_contratante"><OportunidadeDetails /></ProtectedRoute>} 
+          />
+          <Route 
+            path="/instituicao-contratante/jovens-recomendados" 
+            element={<ProtectedRoute allowedRole="instituicao_contratante"><JovensRecomendados /></ProtectedRoute>} 
           />
 
           {/* Rota 404 - Redireciona para a página inicial */}

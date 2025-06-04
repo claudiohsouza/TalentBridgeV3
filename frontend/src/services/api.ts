@@ -219,6 +219,8 @@ export const jovemService = {
   getJovem: async (id: number): Promise<Jovem> => {
     try {
       const response = await api.get<Jovem>(`/api/jovens/${id}`);
+      console.log('[Jovem Service] Dados do jovem recebidos:', response.data);
+      console.log('[Jovem Service] Formato da data de atualização:', response.data.ultima_atualizacao);
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar jovem:', error);
@@ -294,6 +296,16 @@ export const jovemService = {
       console.error('Erro ao adicionar histórico:', error);
       throw error;
     }
+  },
+
+  listarJovensRecomendados: async (): Promise<any[]> => {
+    try {
+      const response = await api.get<any[]>('/api/jovens/recomendados');
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao listar jovens recomendados:', error);
+      throw error;
+    }
   }
 };
 
@@ -362,11 +374,17 @@ export const oportunidadeService = {
   // Novo método para recomendar jovem
   recomendarJovem: async ({ jovem_id, oportunidade_id, justificativa }: { jovem_id: string | number, oportunidade_id: string | number, justificativa: string }) => {
     try {
+      console.log('[Oportunidade Service] Recomendando jovem:', { jovem_id, oportunidade_id });
       const response = await api.post('/api/recomendacoes', {
         jovem_id,
         oportunidade_id,
         justificativa
       });
+      
+      // Atualizar os dados do jovem após a recomendação
+      const jovemAtualizado = await jovemService.getJovem(Number(jovem_id));
+      console.log('[Oportunidade Service] Jovem atualizado após recomendação:', jovemAtualizado);
+      
       return response.data;
     } catch (error) {
       console.error('[Oportunidade Service] Erro ao recomendar jovem:', error);

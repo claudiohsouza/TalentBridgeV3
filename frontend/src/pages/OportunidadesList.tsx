@@ -21,6 +21,32 @@ const corrigirTexto = (texto: string): string => {
     .replace(/Ã§Ã£/g, 'ção');
 };
 
+// Função para formatar texto com capitalização e espaços
+const formatarTexto = (texto: string): string => {
+  if (!texto) return '';
+  
+  // Primeiro corrige problemas de codificação
+  const textoCorrigido = corrigirTexto(texto);
+  
+  // Substitui underscores por espaços
+  const textoComEspacos = textoCorrigido.replace(/_/g, ' ');
+  
+  // Lista de siglas que devem permanecer em maiúsculas
+  const siglas = ['CLT', 'PJ', 'MEI', 'TI', 'RH', 'DP', 'TI'];
+  
+  // Capitaliza cada palavra, mantendo siglas em maiúsculas
+  return textoComEspacos
+    .split(' ')
+    .map(palavra => {
+      const palavraUpper = palavra.toUpperCase();
+      if (siglas.includes(palavraUpper)) {
+        return palavraUpper;
+      }
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1).toLowerCase();
+    })
+    .join(' ');
+};
+
 const OportunidadesList: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -38,21 +64,21 @@ const OportunidadesList: React.FC = () => {
   const urlBase = user?.papel ? `/${papelParaUrl[user.papel]}/oportunidades` : '';
 
   useEffect(() => {
-    const fetchOportunidades = async () => {
-      try {
-        setLoading(true);
-        const data = await oportunidadeService.listarOportunidades();
-        setOportunidades(data);
-      } catch (error) {
-        console.error('Erro:', error);
-        setError('Erro ao carregar dados. Por favor, tente novamente.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchOportunidades();
   }, []);
+
+  const fetchOportunidades = async () => {
+    try {
+      setLoading(true);
+      const data = await oportunidadeService.listarOportunidades();
+      setOportunidades(data);
+    } catch (error) {
+      setError('Erro ao carregar oportunidades');
+      console.error('Erro:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredOportunidades = oportunidades.filter(oportunidade =>
     oportunidade.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -222,10 +248,10 @@ const OportunidadesList: React.FC = () => {
                         {corrigirTexto(oportunidade.titulo)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-cursor-text-secondary">
-                        {corrigirTexto(oportunidade.tipo)}
+                        {formatarTexto(oportunidade.tipo)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-cursor-text-secondary">
-                        {corrigirTexto(oportunidade.area)}
+                        {formatarTexto(oportunidade.area)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`badge ${

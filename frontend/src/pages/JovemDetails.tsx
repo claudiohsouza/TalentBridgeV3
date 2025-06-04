@@ -23,6 +23,15 @@ const formatarFormacao = (formacao: string): string => {
   return formatacoes[formacao] || formacao;
 };
 
+// Função para formatar tipo e área
+const formatarTipoArea = (valor: string): string => {
+  if (!valor) return '';
+  return valor
+    .split('_')
+    .map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1).toLowerCase())
+    .join(' ');
+};
+
 // Função para formatar texto com primeira letra maiúscula
 const capitalizarPalavras = (texto: string | undefined | null): string => {
   if (!texto || typeof texto !== 'string') {
@@ -206,7 +215,15 @@ const JovemDetails: React.FC = () => {
         {/* Botão de Voltar */}
         <div className="mb-4">
           <button
-            onClick={() => navigate('/instituicao-ensino')}
+            onClick={() => {
+              const papelParaUrl = {
+                'instituicao_ensino': 'instituicao-ensino',
+                'chefe_empresa': 'chefe-empresa',
+                'instituicao_contratante': 'instituicao-contratante'
+              };
+              const urlPapel = user?.papel ? papelParaUrl[user.papel] : '';
+              navigate(`/${urlPapel}/jovens`);
+            }}
             className="btn-secondary"
           >
             Voltar
@@ -255,30 +272,54 @@ const JovemDetails: React.FC = () => {
 
           <div className="card p-6">
             <h3 className="text-lg font-semibold text-cursor-text-primary mb-2">Status</h3>
-            <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            <div className="flex items-center gap-2 mt-6">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
                 jovem.status === 'Ativo' ? 'bg-green-100 text-green-800' :
                 jovem.status === 'Inativo' ? 'bg-red-100 text-red-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d={jovem.status === 'Ativo' ? 
+                      "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : 
+                      "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    } 
+                  />
+                </svg>
                 {jovem.status}
               </span>
             </div>
-            <p className="text-sm text-cursor-text-secondary mt-2">
-              Última atualização: {new Date(jovem.ultima_atualizacao).toLocaleDateString()}
-            </p>
           </div>
 
           <div className="card p-6">
             <h3 className="text-lg font-semibold text-cursor-text-primary mb-2">Oportunidades</h3>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold text-cursor-text-primary">
-                {jovem.oportunidades?.length || 0}
-              </span>
+              {jovem.oportunidades && jovem.oportunidades.length > 0 ? (
+                <span className="text-3xl font-bold text-cursor-text-primary">
+                  {jovem.oportunidades.length}
+                </span>
+              ) : (
+                <span className="text-cursor-text-tertiary text-base font-medium">Ainda não recomendado</span>
+              )}
             </div>
-            <p className="text-sm text-cursor-text-secondary mt-2">
-              Oportunidades disponíveis
-            </p>
+            {jovem.oportunidades && jovem.oportunidades.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {jovem.oportunidades.map((oportunidade) => (
+                  <div key={oportunidade.id} className="p-3 bg-cursor-background-light rounded-lg border border-cursor-border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-cursor-text-primary font-medium">{oportunidade.titulo}</span>
+                      <span className={`badge ${
+                        oportunidade.status === 'Aberta' ? 'badge-success' : 
+                        oportunidade.status === 'Fechada' ? 'badge-warning' : 
+                        'badge-default'
+                      }`}>
+                        {oportunidade.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -309,6 +350,18 @@ const JovemDetails: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-cursor-text-secondary mb-1">Curso</label>
                     <p className="text-cursor-text-primary">{jovem.curso}</p>
+                  </div>
+                )}
+                {jovem.tipo && (
+                  <div>
+                    <label className="block text-sm font-medium text-cursor-text-secondary mb-1">Tipo</label>
+                    <p className="text-cursor-text-primary">{formatarTipoArea(jovem.tipo)}</p>
+                  </div>
+                )}
+                {jovem.area && (
+                  <div>
+                    <label className="block text-sm font-medium text-cursor-text-secondary mb-1">Área</label>
+                    <p className="text-cursor-text-primary">{formatarTipoArea(jovem.area)}</p>
                   </div>
                 )}
               </div>
