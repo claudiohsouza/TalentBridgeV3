@@ -7,18 +7,18 @@ import { UserRole } from './types';
 // Páginas
 import Login from './pages/login';
 import Cadastro from './pages/cadastro';
-import DashboardInstituicaoEnsino from './pages/dashboardInstituicaoEnsino';
-import DashboardChefeEmpresa from './pages/dashboardChefeEmpresa';
-import DashboardInstituicaoContratante from './pages/dashboardInstituicaoContratante';
-import Home from './pages/home';
-import Perfil from './pages/perfil';
-import AlterarSenha from './pages/alterarSenha';
-import JovensList from './pages/jovensList';
-import JovemDetails from './pages/jovemDetails';
-import OportunidadesList from './pages/oportunidadesList';
-import OportunidadeDetails from './pages/oportunidadeDetails';
-import NovoJovem from './pages/novoJovem';
-import RecomendarJovem from './pages/recomendarJovem';
+import DashboardInstituicaoEnsino from './pages/DashboardInstituicaoEnsino';
+import DashboardChefeEmpresa from './pages/DashboardChefeEmpresa';
+import DashboardInstituicaoContratante from './pages/DashboardInstituicaoContratante';
+import Home from './pages/Home';
+import Perfil from './pages/Perfil';
+import AlterarSenha from './pages/AlterarSenha';
+import JovensList from './pages/JovensList';
+import JovemDetails from './pages/JovemDetails';
+import OportunidadesList from './pages/OportunidadesList';
+import OportunidadeDetails from './pages/OportunidadeDetails';
+import NovoJovem from './pages/NovoJovem';
+import RecomendarJovem from './pages/RecomendarJovem';
 
 // Componente para rotas protegidas
 type ProtectedRouteProps = {
