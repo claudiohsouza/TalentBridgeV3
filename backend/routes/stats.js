@@ -10,7 +10,7 @@ router.get('/', async (req, res, next) => {
     const oportunidadesQuery = pool.query('SELECT COUNT(*) AS total FROM oportunidades;');
     const chefesEmpresaQuery = pool.query('SELECT COUNT(*) AS total FROM chefes_empresas;');
     const instContratanteQuery = pool.query('SELECT COUNT(*) AS total FROM instituicoes_contratantes;');
-    const contratacoesQuery = pool.query("SELECT COUNT(*) AS total FROM candidaturas WHERE status = 'aprovado';");
+    const contratacoesQuery = pool.query("SELECT COUNT(*) AS total FROM jovens WHERE status = 'contratado';");
 
     const [
       jovensResult, 
