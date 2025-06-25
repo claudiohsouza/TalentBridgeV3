@@ -1,5 +1,5 @@
 import express from 'express';
-import { authMiddleware, checkRole } from './auth.js';
+import { authMiddleware, checkRole } from '../middleware/auth.js';
 import { validate, oportunidadeSchema } from '../middleware/validator.js';
 import { ForbiddenError, NotFoundError } from '../middleware/errorHandler.js';
 

@@ -3,59 +3,11 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { validate, loginSchema, registroSchema } from '../middleware/validator.js';
 import { AuthenticationError, ValidationError } from '../middleware/errorHandler.js';
+import { authMiddleware, checkRole } from '../middleware/auth.js';
 import config from '../config/config.js';
 import logger from '../config/logger.js';
 
 const router = express.Router();
-
-// Middleware de autenticação (JWT)
-export const authMiddleware = (req, res, next) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) {
-      throw new AuthenticationError('Token não fornecido');
-    }
-    
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      throw new AuthenticationError('Token inválido');
-    }
-    
-    const jwtSecret = config.security.jwtSecret;
-    const decoded = jwt.verify(token, jwtSecret);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    next(new AuthenticationError('Token inválido'));
-  }
-};
-
-// Middleware para verificar o papel do usuário
-export const checkRole = (roles) => {
-  return (req, res, next) => {
-    console.log('[Auth] Verificando papel do usuário:', {
-      userRole: req.user?.papel,
-      expectedRoles: roles,
-      userId: req.user?.id
-    });
-    
-    if (!req.user) {
-      console.log('[Auth] Usuário não autenticado');
-      return next(new AuthenticationError('Usuário não autenticado'));
-    }
-    
-    if (!roles.includes(req.user.papel)) {
-      console.log('[Auth] Acesso negado - papel não autorizado:', {
-        userRole: req.user.papel,
-        expectedRoles: roles
-      });
-      return next(new AuthenticationError('Acesso não autorizado para este papel'));
-    }
-    
-    console.log('[Auth] Acesso autorizado para papel:', req.user.papel);
-    next();
-  };
-};
 
 // Rota de login
 router.post('/login', validate(loginSchema), async (req, res, next) => {

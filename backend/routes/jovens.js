@@ -1,6 +1,6 @@
 import express from 'express';
 import { validate, jovemSchema, recomendacaoSchema } from '../middleware/validator.js';
-import { authMiddleware, checkRole } from '../routes/auth.js';
+import { authMiddleware, checkRole } from '../middleware/auth.js';
 import { ForbiddenError, NotFoundError, DatabaseError } from '../middleware/errorHandler.js';
 
 const router = express.Router();

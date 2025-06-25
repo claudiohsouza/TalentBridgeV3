@@ -32,14 +32,14 @@ router.get('/', async (req, res, next) => {
     const totalContratantes = parseInt(instContratanteResult.rows[0].total, 10);
     const totalContratacoes = parseInt(contratacoesResult.rows[0].total, 10);
 
-    res.json({
+    res.success({
       jovens: totalJovens,
       oportunidades: totalOportunidades,
       empresas: totalChefes + totalContratantes,
       contratacoes: totalContratacoes
     });
   } catch (err) {
-    next(err);
+    res.error('Erro ao buscar estatísticas', 500, err.message);
   }
 });
 
@@ -99,14 +99,13 @@ router.get('/featured', async (req, res, next) => {
       LIMIT 2
     `, [featuredOpportunityId]);
     
-    res.json({
+    res.success({
       featured: featuredData,
       others: otherOpportunitiesResult.rows
     });
 
   } catch (error) {
-    console.error('[Stats Service] Erro ao buscar dados em destaque:', error);
-    next(error);
+    res.error('Erro ao buscar dados em destaque', 500, error.message);
   }
 });
 

@@ -1,8 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import { authMiddleware } from './auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 import { validate, atualizacaoUsuarioSchema } from '../middleware/validator.js';
-import { ValidationError } from '../middleware/errorHandler.js';
+import { ForbiddenError, NotFoundError } from '../middleware/errorHandler.js';
 import logger from '../config/logger.js';
 
 const router = express.Router();
@@ -44,7 +44,7 @@ router.get('/me', authMiddleware, async (req, res, next) => {
       perfil = r.rows[0] || null;
     }
     
-    res.json({ ...usuario, perfil });
+    res.success({ ...usuario, perfil });
   } catch (error) {
     next(error);
   }
@@ -78,7 +78,7 @@ router.put('/me', authMiddleware, validate(atualizacaoUsuarioSchema), async (req
     if (senhaAtual) {
       const senhaValida = await bcrypt.compare(senhaAtual, usuarioAtual.rows[0].senha);
       if (!senhaValida) {
-        throw new ValidationError('Senha atual incorreta');
+        throw new ForbiddenError('Senha atual incorreta');
       }
     }
     
@@ -100,7 +100,7 @@ router.put('/me', authMiddleware, validate(atualizacaoUsuarioSchema), async (req
       );
       
       if (emailExistente.rows.length > 0) {
-        throw new ValidationError('Este email já está em uso');
+        throw new ForbiddenError('Este email já está em uso');
       }
       
       alteracoes.push(`email = $${params.length + 1}`);
@@ -183,7 +183,7 @@ router.put('/me', authMiddleware, validate(atualizacaoUsuarioSchema), async (req
       
       await client.query('COMMIT');
       
-      res.json({
+      res.success({
         message: 'Perfil atualizado com sucesso',
         usuario: usuarioAtualizado
       });
@@ -213,7 +213,7 @@ router.put('/alterar-senha', authMiddleware, async (req, res, next) => {
     const { senhaAtual, novaSenha } = req.body;
     
     if (!senhaAtual || !novaSenha) {
-      throw new ValidationError('Senha atual e nova senha são obrigatórias');
+      throw new ForbiddenError('Senha atual e nova senha são obrigatórias');
     }
     
     // Buscar dados atuais do usuário
@@ -229,7 +229,7 @@ router.put('/alterar-senha', authMiddleware, async (req, res, next) => {
     // Verificar senha atual
     const senhaValida = await bcrypt.compare(senhaAtual, usuarioAtual.rows[0].senha);
     if (!senhaValida) {
-      throw new ValidationError('Senha atual incorreta');
+      throw new ForbiddenError('Senha atual incorreta');
     }
     
     // Hash da nova senha
@@ -241,7 +241,7 @@ router.put('/alterar-senha', authMiddleware, async (req, res, next) => {
       [senhaHash, id]
     );
     
-    res.json({
+    res.success({
       message: 'Senha alterada com sucesso'
     });
   } catch (error) {
@@ -257,9 +257,7 @@ router.post('/contato', authMiddleware, async (req, res, next) => {
 
     // Verificar se o usuário é uma instituição contratante
     if (req.user.papel !== 'instituicao_contratante') {
-      return res.status(403).json({ 
-        message: 'Apenas instituições contratantes podem enviar contatos' 
-      });
+      return res.error('Apenas instituições contratantes podem enviar contatos', 403);
     }
 
     // Verificar se o jovem existe
@@ -269,7 +267,7 @@ router.post('/contato', authMiddleware, async (req, res, next) => {
     );
 
     if (jovemResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Jovem não encontrado' });
+      return res.error('Jovem não encontrado', 404);
     }
 
     const jovem = jovemResult.rows[0];
@@ -281,7 +279,7 @@ router.post('/contato', authMiddleware, async (req, res, next) => {
     );
 
     if (instituicaoResult.rows.length === 0) {
-      return res.status(400).json({ message: 'Perfil de instituição não encontrado' });
+      return res.error('Perfil de instituição não encontrado', 400);
     }
 
     const instituicao = instituicaoResult.rows[0];
@@ -318,11 +316,10 @@ router.post('/contato', authMiddleware, async (req, res, next) => {
       data: new Date().toISOString()
     });
 
-    res.status(201).json({
-      success: true,
+    res.success({
       message: 'Contato enviado com sucesso',
       contato: contatoResult.rows[0]
-    });
+    }, 201);
 
   } catch (error) {
     console.error('Erro ao enviar contato:', error);
@@ -337,9 +334,7 @@ router.get('/contatos', authMiddleware, async (req, res, next) => {
 
     // Verificar se o usuário é uma instituição contratante
     if (req.user.papel !== 'instituicao_contratante') {
-      return res.status(403).json({ 
-        message: 'Apenas instituições contratantes podem visualizar contatos' 
-      });
+      return res.error('Apenas instituições contratantes podem visualizar contatos', 403);
     }
 
     // Buscar ID da instituição
@@ -349,7 +344,7 @@ router.get('/contatos', authMiddleware, async (req, res, next) => {
     );
 
     if (instituicaoResult.rows.length === 0) {
-      return res.status(400).json({ message: 'Perfil de instituição não encontrado' });
+      return res.error('Perfil de instituição não encontrado', 400);
     }
 
     const instituicaoId = instituicaoResult.rows[0].id;
@@ -372,7 +367,7 @@ router.get('/contatos', authMiddleware, async (req, res, next) => {
       [instituicaoId]
     );
 
-    res.json(contatosResult.rows);
+    res.success(contatosResult.rows);
 
   } catch (error) {
     console.error('Erro ao buscar contatos:', error);

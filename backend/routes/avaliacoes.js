@@ -1,26 +1,25 @@
 import express from 'express';
 import db from '../db-connect.js';
-import auth from '../middleware/auth.js';
-import { checkRole } from '../middleware/roles.js';
+import { authMiddleware, checkRole } from '../middleware/auth.js';
 
 const router = express.Router();
 const pool = db.pool;
 
 // Obter categorias de avaliação
-router.get('/categorias', auth, async (req, res) => {
+router.get('/categorias', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM categorias_avaliacao ORDER BY nome'
     );
-    res.json(result.rows);
+    res.success(result.rows);
   } catch (error) {
     console.error('Erro ao buscar categorias:', error);
-    res.status(500).json({ erro: 'Erro ao buscar categorias de avaliação' });
+    res.error('Erro ao buscar categorias de avaliação', 500, error.message);
   }
 });
 
 // Obter avaliações de um jovem
-router.get('/jovem/:id', auth, async (req, res) => {
+router.get('/jovem/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -31,7 +30,7 @@ router.get('/jovem/:id', auth, async (req, res) => {
     );
 
     if (jovemExists.rows.length === 0) {
-      return res.status(404).json({ erro: 'Jovem não encontrado' });
+      return res.error('Jovem não encontrado', 404);
     }
     
     const result = await pool.query(
@@ -71,13 +70,13 @@ router.get('/jovem/:id', auth, async (req, res) => {
         { media: 0, total: 0 }
       );
 
-      res.json({
+      res.success({
         avaliacoes,
         media_geral: total > 0 ? (media / total) : 0,
         total_avaliacoes: avaliacoes.length
       });
     } else {
-      res.json({
+      res.success({
         avaliacoes: [],
         media_geral: 0,
         total_avaliacoes: 0
@@ -86,12 +85,12 @@ router.get('/jovem/:id', auth, async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar avaliações:', error);
     console.error(error.stack);
-    res.status(500).json({ erro: 'Erro ao buscar avaliações' });
+    res.error('Erro ao buscar avaliações', 500, error.message);
   }
 });
 
 // Criar nova avaliação
-router.post('/jovem/:id', auth, checkRole(['instituicao_ensino']), async (req, res) => {
+router.post('/jovem/:id', authMiddleware, checkRole(['instituicao_ensino']), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -100,7 +99,7 @@ router.post('/jovem/:id', auth, checkRole(['instituicao_ensino']), async (req, r
     
     // Validar nota
     if (nota < 0 || nota > 10) {
-      return res.status(400).json({ erro: 'Nota deve estar entre 0 e 10' });
+      return res.error('Nota deve estar entre 0 e 10', 400);
     }
     
     // Verificar se a categoria existe
@@ -110,7 +109,7 @@ router.post('/jovem/:id', auth, checkRole(['instituicao_ensino']), async (req, r
     );
     
     if (categoriaResult.rows.length === 0) {
-      return res.status(400).json({ erro: 'Categoria de avaliação inválida' });
+      return res.error('Categoria de avaliação inválida', 400);
     }
     
     // Verificar se o jovem existe
@@ -120,7 +119,7 @@ router.post('/jovem/:id', auth, checkRole(['instituicao_ensino']), async (req, r
     );
     
     if (jovemResult.rows.length === 0) {
-      return res.status(404).json({ erro: 'Jovem não encontrado' });
+      return res.error('Jovem não encontrado', 404);
     }
     
     // Iniciar transação
@@ -181,21 +180,21 @@ router.post('/jovem/:id', auth, checkRole(['instituicao_ensino']), async (req, r
     
     await client.query('COMMIT');
     
-    res.status(201).json({
+    res.success({
       ...avaliacaoResult.rows[0],
       mensagem: avaliacaoExistente.rows.length > 0 ? 'Avaliação atualizada com sucesso' : 'Avaliação criada com sucesso'
-    });
+    }, 201);
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Erro ao criar/atualizar avaliação:', error);
-    res.status(500).json({ erro: 'Erro ao criar/atualizar avaliação' });
+    res.error('Erro ao criar/atualizar avaliação', 500, error.message);
   } finally {
     client.release();
   }
 });
 
 // Atualizar avaliação
-router.put('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) => {
+router.put('/:id', authMiddleware, checkRole(['instituicao_ensino']), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -209,7 +208,7 @@ router.put('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) => 
     );
     
     if (avaliacaoResult.rows.length === 0) {
-      return res.status(404).json({ erro: 'Avaliação não encontrada' });
+      return res.error('Avaliação não encontrada', 404);
     }
     
     const avaliacao = avaliacaoResult.rows[0];
@@ -219,12 +218,12 @@ router.put('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) => 
       avaliacao.avaliador_id !== req.user.id ||
       avaliacao.avaliador_tipo !== req.user.papel
     ) {
-      return res.status(403).json({ erro: 'Sem permissão para editar esta avaliação' });
+      return res.error('Sem permissão para editar esta avaliação', 403);
     }
     
     // Validar nota
     if (nota < 0 || nota > 10) {
-      return res.status(400).json({ erro: 'Nota deve estar entre 0 e 10' });
+      return res.error('Nota deve estar entre 0 e 10', 400);
     }
     
     // Atualizar avaliação
@@ -239,17 +238,17 @@ router.put('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) => 
       [nota, comentario, evidencias || [], id]
     );
     
-    res.json(result.rows[0]);
+    res.success(result.rows[0]);
   } catch (error) {
     console.error('Erro ao atualizar avaliação:', error);
-    res.status(500).json({ erro: 'Erro ao atualizar avaliação' });
+    res.error('Erro ao atualizar avaliação', 500, error.message);
   } finally {
     client.release();
   }
 });
 
 // Excluir avaliação
-router.delete('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) => {
+router.delete('/:id', authMiddleware, checkRole(['instituicao_ensino']), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -262,7 +261,7 @@ router.delete('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) 
     );
     
     if (avaliacaoResult.rows.length === 0) {
-      return res.status(404).json({ erro: 'Avaliação não encontrada' });
+      return res.error('Avaliação não encontrada', 404);
     }
     
     const avaliacao = avaliacaoResult.rows[0];
@@ -272,15 +271,15 @@ router.delete('/:id', auth, checkRole(['instituicao_ensino']), async (req, res) 
       avaliacao.avaliador_id !== req.user.id ||
       avaliacao.avaliador_tipo !== req.user.papel
     ) {
-      return res.status(403).json({ erro: 'Sem permissão para excluir esta avaliação' });
+      return res.error('Sem permissão para excluir esta avaliação', 403);
     }
     
     await client.query('DELETE FROM avaliacoes WHERE id = $1', [id]);
     
-    res.json({ mensagem: 'Avaliação excluída com sucesso' });
+    res.success({ mensagem: 'Avaliação excluída com sucesso' });
   } catch (error) {
     console.error('Erro ao excluir avaliação:', error);
-    res.status(500).json({ erro: 'Erro ao excluir avaliação' });
+    res.error('Erro ao excluir avaliação', 500, error.message);
   } finally {
     client.release();
   }

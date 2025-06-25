@@ -1,5 +1,5 @@
 import express from 'express';
-import { authMiddleware, checkRole } from './auth.js';
+import { authMiddleware, checkRole } from '../middleware/auth.js';
 import { validate, recomendacaoSchema } from '../middleware/validator.js';
 import { ForbiddenError, NotFoundError } from '../middleware/errorHandler.js';
 import db from '../db-connect.js';
@@ -75,7 +75,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
 
     const result = await req.db.query(query, params);
 
-    res.json({
+    res.success({
       data: result.rows,
       total
     });
@@ -114,7 +114,7 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
       throw new NotFoundError('Recomendação não encontrada');
     }
 
-    res.json(result.rows[0]);
+    res.success(result.rows[0]);
   } catch (error) {
     console.error('[API-recomendacoes] Erro ao obter recomendação:', error);
     next(error);
@@ -205,11 +205,10 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(recomend
     
     console.log('[API-recomendacoes] Recomendação criada com sucesso:', result.rows[0].id);
     
-    res.status(201).json({
-      success: true,
+    res.success({
       message: 'Recomendação realizada com sucesso',
       recomendacao: result.rows[0]
-    });
+    }, 201);
   } catch (error) {
     console.error('[API-recomendacoes] Erro ao criar recomendação:', error);
     next(error);
@@ -226,7 +225,7 @@ router.put('/:id/status', authMiddleware, checkRole(['instituicao_contratante'])
     // Validação do status de entrada
     const statusesValidos = ['em_processo', 'contratado', 'rejeitado'];
     if (!status || !statusesValidos.includes(status)) {
-      return res.status(400).json({ message: 'Status inválido ou não fornecido' });
+      return res.error('Status inválido ou não fornecido', 400);
     }
 
     await client.query('BEGIN');
@@ -293,8 +292,7 @@ router.put('/:id/status', authMiddleware, checkRole(['instituicao_contratante'])
 
     await client.query('COMMIT');
 
-    res.json({
-      success: true,
+    res.success({
       message: 'Status da recomendação atualizado com sucesso',
       recomendacao: updateResult.rows[0]
     });

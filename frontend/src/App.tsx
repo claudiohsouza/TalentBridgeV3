@@ -5,8 +5,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UserRole } from './types';
 
 // Páginas
-import Login from './pages/login';
-import Cadastro from './pages/cadastro';
+import Login from './pages/Login';
+import Cadastro from './pages/Cadastro';
 import DashboardInstituicaoEnsino from './pages/DashboardInstituicaoEnsino';
 import DashboardChefeEmpresa from './pages/DashboardChefeEmpresa';
 import DashboardInstituicaoContratante from './pages/DashboardInstituicaoContratante';

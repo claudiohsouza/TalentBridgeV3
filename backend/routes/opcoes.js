@@ -23,10 +23,10 @@ router.get('/', async (req, res) => {
         }, {});
 
         console.log('Opções agrupadas:', opcoesAgrupadas);
-        res.json(opcoesAgrupadas);
+        res.success(opcoesAgrupadas);
     } catch (error) {
         console.error('Erro ao buscar opções:', error);
-        res.status(500).json({ error: 'Erro ao buscar opções' });
+        res.error('Erro ao buscar opções', 500, error.message);
     }
 });
 
@@ -40,10 +40,10 @@ router.get('/:categoria', async (req, res) => {
       [categoria]
     );
     
-    res.json(result.rows);
+    res.success(result.rows);
   } catch (error) {
     console.error('Erro ao buscar opções:', error);
-    res.status(500).json({ erro: 'Erro ao buscar opções' });
+    res.error('Erro ao buscar opções', 500, error.message);
   }
 });
 
@@ -54,10 +54,10 @@ router.get('/categorias', async (req, res) => {
       'SELECT DISTINCT categoria FROM opcoes_sistema WHERE ativo = true ORDER BY categoria'
     );
     
-    res.json(result.rows.map(row => row.categoria));
+    res.success(result.rows.map(row => row.categoria));
   } catch (error) {
     console.error('Erro ao buscar categorias:', error);
-    res.status(500).json({ erro: 'Erro ao buscar categorias' });
+    res.error('Erro ao buscar categorias', 500, error.message);
   }
 });
 
