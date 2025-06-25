@@ -11,12 +11,17 @@ const pool = new Pool({
   database: config.database.database,
   password: config.database.password,
   port: config.database.port,
+  ssl: {
+    rejectUnauthorized: false,
+    require: true
+  }
 });
 
 // Teste de conexão
 async function testarConexao() {
   try {
     const client = await pool.connect();
+    logger.info('Conexão com banco de dados estabelecida com sucesso');
     client.release();
     return true;
   } catch (err) {
