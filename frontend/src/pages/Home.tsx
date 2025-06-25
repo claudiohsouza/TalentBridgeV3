@@ -37,38 +37,60 @@ export default function Home() {
   // Animação de contadores
   useEffect(() => {
     const fetchAndAnimateStats = async () => {
-      const targetStats = await statsService.getStats();
-
-      const duration = 2000;
-      const steps = 60;
-      const stepDuration = duration / steps;
-
-      let currentStep = 0;
-      const timer = setInterval(() => {
-        currentStep++;
-        const progress = currentStep / steps;
-
-        setStats({
-          jovens: Math.floor(targetStats.jovens * progress),
-          oportunidades: Math.floor(targetStats.oportunidades * progress),
-          empresas: Math.floor(targetStats.empresas * progress),
-          contratacoes: Math.floor(targetStats.contratacoes * progress)
-        });
-
-        if (currentStep >= steps) {
-          clearInterval(timer);
-          setStats(targetStats); // Garante que os números finais sejam exatos
+      try {
+        const targetStats = await statsService.getStats();
+        
+        // Verificar se targetStats existe e tem as propriedades necessárias
+        if (!targetStats || typeof targetStats !== 'object') {
+          console.warn('[Home] Dados de estatísticas inválidos:', targetStats);
+          return;
         }
-      }, stepDuration);
 
-      return () => clearInterval(timer);
+        const duration = 2000;
+        const steps = 60;
+        const stepDuration = duration / steps;
+
+        let currentStep = 0;
+        const timer = setInterval(() => {
+          currentStep++;
+          const progress = currentStep / steps;
+
+          setStats({
+            jovens: Math.floor((targetStats.jovens || 0) * progress),
+            oportunidades: Math.floor((targetStats.oportunidades || 0) * progress),
+            empresas: Math.floor((targetStats.empresas || 0) * progress),
+            contratacoes: Math.floor((targetStats.contratacoes || 0) * progress)
+          });
+
+          if (currentStep >= steps) {
+            clearInterval(timer);
+            setStats({
+              jovens: targetStats.jovens || 0,
+              oportunidades: targetStats.oportunidades || 0,
+              empresas: targetStats.empresas || 0,
+              contratacoes: targetStats.contratacoes || 0
+            }); // Garante que os números finais sejam exatos
+          }
+        }, stepDuration);
+
+        return () => clearInterval(timer);
+      } catch (error) {
+        console.error('[Home] Erro ao buscar estatísticas:', error);
+        // Manter os valores padrão em caso de erro
+      }
     };
 
     const fetchFeaturedData = async () => {
-      setLoadingFeatured(true);
-      const data = await statsService.getFeatured();
-      setFeaturedData(data);
-      setLoadingFeatured(false);
+      try {
+        setLoadingFeatured(true);
+        const data = await statsService.getFeatured();
+        setFeaturedData(data);
+      } catch (error) {
+        console.error('[Home] Erro ao buscar dados em destaque:', error);
+        setFeaturedData({ featured: null, others: [] });
+      } finally {
+        setLoadingFeatured(false);
+      }
     };
 
     fetchAndAnimateStats();
@@ -175,7 +197,7 @@ export default function Home() {
                 </svg>
               </div>
               <div className="text-3xl md:text-4xl font-bold text-cursor-text-primary mb-2">
-                {stats.jovens.toLocaleString()}+
+                {(stats?.jovens || 0).toLocaleString()}+
               </div>
               <div className="text-cursor-text-secondary">Jovens Cadastrados</div>
             </div>
@@ -187,7 +209,7 @@ export default function Home() {
                 </svg>
               </div>
               <div className="text-3xl md:text-4xl font-bold text-cursor-text-primary mb-2">
-                {stats.oportunidades.toLocaleString()}+
+                {(stats?.oportunidades || 0).toLocaleString()}+
               </div>
               <div className="text-cursor-text-secondary">Oportunidades</div>
             </div>
@@ -199,7 +221,7 @@ export default function Home() {
                 </svg>
               </div>
               <div className="text-3xl md:text-4xl font-bold text-cursor-text-primary mb-2">
-                {stats.empresas.toLocaleString()}+
+                {(stats?.empresas || 0).toLocaleString()}+
               </div>
               <div className="text-cursor-text-secondary">Empresas Parceiras</div>
             </div>
@@ -211,7 +233,7 @@ export default function Home() {
                 </svg>
               </div>
               <div className="text-3xl md:text-4xl font-bold text-cursor-text-primary mb-2">
-                {stats.contratacoes.toLocaleString()}+
+                {(stats?.contratacoes || 0).toLocaleString()}+
               </div>
               <div className="text-cursor-text-secondary">Contratações Realizadas</div>
             </div>

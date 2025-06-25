@@ -500,8 +500,20 @@ export const statsService = {
     try {
       console.log('[Stats Service] Buscando estatísticas');
       const response = await api.get('/api/stats');
+      console.log('[Stats Service] Resposta completa:', response);
       console.log('[Stats Service] Estatísticas recuperadas:', response.data);
-      return response.data;
+      
+      // Verificar se a resposta tem a estrutura esperada
+      if (response.data && response.data.data) {
+        // Se a resposta tem a estrutura { status, message, data }
+        return response.data.data;
+      } else if (response.data && typeof response.data === 'object') {
+        // Se a resposta é diretamente os dados
+        return response.data;
+      } else {
+        console.warn('[Stats Service] Estrutura de resposta inesperada:', response.data);
+        return { jovens: 0, oportunidades: 0, empresas: 0, contratacoes: 0 };
+      }
     } catch (error) {
       console.error('[Stats Service] Erro ao buscar estatísticas:', error);
       // Retornar valores padrão em caso de erro para não quebrar a página
@@ -513,8 +525,20 @@ export const statsService = {
     try {
       console.log('[Stats Service] Buscando dados em destaque');
       const response = await api.get('/api/stats/featured');
+      console.log('[Stats Service] Resposta completa featured:', response);
       console.log('[Stats Service] Dados em destaque recuperados:', response.data);
-      return response.data;
+      
+      // Verificar se a resposta tem a estrutura esperada
+      if (response.data && response.data.data) {
+        // Se a resposta tem a estrutura { status, message, data }
+        return response.data.data;
+      } else if (response.data && typeof response.data === 'object') {
+        // Se a resposta é diretamente os dados
+        return response.data;
+      } else {
+        console.warn('[Stats Service] Estrutura de resposta inesperada para featured:', response.data);
+        return { featured: null, others: [] };
+      }
     } catch (error) {
       console.error('[Stats Service] Erro ao buscar dados em destaque:', error);
       return { featured: null, others: [] };

@@ -4,7 +4,13 @@ const router = express.Router();
 
 router.get('/', async (req, res, next) => {
   try {
+    console.log('[Stats] Iniciando busca de estatísticas');
     const pool = req.db;
+
+    if (!pool) {
+      console.error('[Stats] Pool de conexão não disponível');
+      return res.error('Erro de conexão com o banco de dados', 500);
+    }
 
     const jovensQuery = pool.query('SELECT COUNT(*) AS total FROM jovens;');
     const oportunidadesQuery = pool.query('SELECT COUNT(*) AS total FROM oportunidades;');
@@ -32,13 +38,17 @@ router.get('/', async (req, res, next) => {
     const totalContratantes = parseInt(instContratanteResult.rows[0].total, 10);
     const totalContratacoes = parseInt(contratacoesResult.rows[0].total, 10);
 
-    res.success({
+    const stats = {
       jovens: totalJovens,
       oportunidades: totalOportunidades,
       empresas: totalChefes + totalContratantes,
       contratacoes: totalContratacoes
-    });
+    };
+
+    console.log('[Stats] Estatísticas calculadas:', stats);
+    res.success(stats);
   } catch (err) {
+    console.error('[Stats] Erro ao buscar estatísticas:', err);
     res.error('Erro ao buscar estatísticas', 500, err.message);
   }
 });
