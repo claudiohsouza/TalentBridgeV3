@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS jovens (
     habilidades TEXT[], -- Array de habilidades
     interesses TEXT[], -- Array de interesses
     planos_futuros TEXT,
-    status VARCHAR(30) DEFAULT 'pendente', -- 'pendente', 'aprovado', 'rejeitado', 'cancelado'
+    status VARCHAR(30) DEFAULT 'pendente', -- 'pendente', 'aprovado', 'rejeitado', 'cancelado', 'contratado'
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -202,10 +202,11 @@ CREATE TABLE IF NOT EXISTS recomendacoes (
     recomendador_id INTEGER NOT NULL,
     justificativa TEXT,
     comentario TEXT,
-    status VARCHAR(30) DEFAULT 'pendente', -- 'pendente', 'aprovado', 'rejeitado', 'cancelado'
+    status VARCHAR(30) DEFAULT 'pendente', -- 'pendente', 'em_processo', 'contratado', 'rejeitado', 'cancelado', 'aprovado'
     data_recomendacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT recomendacao_unica UNIQUE (jovem_id, oportunidade_id, recomendador_tipo, recomendador_id)
 );
 
 -- Tabela de Jovens e Instituições de Ensino
@@ -314,3 +315,48 @@ CREATE TABLE IF NOT EXISTS tokens_redefinicao_senha (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Tabela de Contatos
+CREATE TABLE IF NOT EXISTS contatos (
+    id SERIAL PRIMARY KEY,
+    jovem_id INTEGER REFERENCES jovens(id) ON DELETE CASCADE,
+    instituicao_id INTEGER REFERENCES instituicoes_contratantes(id) ON DELETE CASCADE,
+    assunto VARCHAR(200) NOT NULL,
+    mensagem TEXT NOT NULL,
+    tipo_contato VARCHAR(20) DEFAULT 'email', -- 'email', 'whatsapp', 'telefone'
+    status VARCHAR(20) DEFAULT 'enviado', -- 'enviado', 'lido', 'respondido'
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================
+-- SCRIPTS DE MIGRAÇÃO
+-- =========================
+
+-- Script para aplicar constraint única em recomendações (executar apenas se a tabela já existir)
+DO $$
+BEGIN
+    -- Verificar se a constraint já existe
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'recomendacao_unica' 
+        AND table_name = 'recomendacoes'
+    ) THEN
+        -- Remover recomendações duplicadas antes de adicionar a constraint
+        DELETE FROM recomendacoes 
+        WHERE id NOT IN (
+            SELECT MIN(id) 
+            FROM recomendacoes 
+            GROUP BY jovem_id, oportunidade_id, recomendador_tipo, recomendador_id
+        );
+        
+        -- Adicionar constraint única
+        ALTER TABLE recomendacoes 
+        ADD CONSTRAINT recomendacao_unica 
+        UNIQUE (jovem_id, oportunidade_id, recomendador_tipo, recomendador_id);
+        
+        RAISE NOTICE 'Constraint única adicionada à tabela recomendacoes';
+    ELSE
+        RAISE NOTICE 'Constraint única já existe na tabela recomendacoes';
+    END IF;
+END $$;

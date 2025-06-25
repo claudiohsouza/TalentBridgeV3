@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Oportunidade } from '../types';
-import { oportunidadeService } from '../services/api';
+import { oportunidadeService, opcoesService } from '../services/api';
 
 // Função utilitária para corrigir problemas de codificação
 const corrigirTexto = (texto: string): string => {
@@ -47,13 +47,55 @@ const formatarTexto = (texto: string): string => {
     .join(' ');
 };
 
+const getStatusInfo = (status: Oportunidade['status']) => {
+  switch (status) {
+    case 'aprovado':
+      return { text: 'Aberta', className: 'badge-success' };
+    case 'pendente':
+      return { text: 'Pendente', className: 'badge-warning' };
+    case 'rejeitado':
+      return { text: 'Rejeitada', className: 'badge-error' };
+    case 'cancelado':
+      return { text: 'Cancelada', className: 'badge-default' };
+    default:
+      return { text: formatarTexto(status), className: 'badge-default' };
+  }
+};
+
 const OportunidadesList: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const searchParams = useSearchParams()[0];
   const [oportunidades, setOportunidades] = useState<Oportunidade[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [tiposVaga, setTiposVaga] = useState<string[]>([]);
+  const [areasAtuacao, setAreasAtuacao] = useState<string[]>([]);
+  const [loadingOpcoes, setLoadingOpcoes] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    titulo: '',
+    descricao: '',
+    tipo: '',
+    area: '',
+    status: 'aprovado' as Oportunidade['status'],
+    requisitos: [] as string[],
+    requisitoInput: '',
+    beneficios: [] as string[],
+    beneficioInput: '',
+    salario: '',
+    horario: '',
+    local: '',
+    data_inicio: '',
+    data_fim: ''
+  });
 
   // Mapear o papel para a URL correta
   const papelParaUrl = {
@@ -66,6 +108,16 @@ const OportunidadesList: React.FC = () => {
   useEffect(() => {
     fetchOportunidades();
   }, []);
+
+  // Verificar se deve abrir o modal automaticamente
+  useEffect(() => {
+    const shouldOpenModal = searchParams.get('nova');
+    if (shouldOpenModal === 'true' && user?.papel === 'chefe_empresa') {
+      abrirModal();
+      // Limpar o parâmetro da URL
+      navigate(window.location.pathname, { replace: true });
+    }
+  }, [searchParams, user?.papel]);
 
   const fetchOportunidades = async () => {
     try {
@@ -80,16 +132,129 @@ const OportunidadesList: React.FC = () => {
     }
   };
 
+  const carregarOpcoes = async () => {
+    try {
+      setLoadingOpcoes(true);
+      const todasOpcoes = await opcoesService.obterTodasOpcoes();
+      setTiposVaga(todasOpcoes.tipos_vaga || []);
+      setAreasAtuacao(todasOpcoes.areas_atuacao || todasOpcoes.areas_interesse || []);
+    } catch (error) {
+      setTiposVaga(['Estágio', 'CLT', 'PJ', 'Temporário']);
+      setAreasAtuacao(['Tecnologia', 'Marketing', 'RH', 'Administração', 'Engenharia']);
+    } finally {
+      setLoadingOpcoes(false);
+    }
+  };
+
+  const abrirModal = () => {
+    setShowModal(true);
+    setModalError(null);
+    setFormData({
+      titulo: '',
+      descricao: '',
+      tipo: '',
+      area: '',
+      status: 'aprovado' as Oportunidade['status'],
+      requisitos: [],
+      requisitoInput: '',
+      beneficios: [],
+      beneficioInput: '',
+      salario: '',
+      horario: '',
+      local: '',
+      data_inicio: '',
+      data_fim: ''
+    });
+    carregarOpcoes();
+  };
+
+  const fecharModal = () => {
+    setShowModal(false);
+    setModalError(null);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddRequisito = () => {
+    if (formData.requisitoInput.trim() && !formData.requisitos.includes(formData.requisitoInput.trim())) {
+      setFormData(prev => ({ 
+        ...prev, 
+        requisitos: [...prev.requisitos, prev.requisitoInput.trim()], 
+        requisitoInput: '' 
+      }));
+    }
+  };
+
+  const handleRemoveRequisito = (index: number) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      requisitos: prev.requisitos.filter((_, i) => i !== index) 
+    }));
+  };
+
+  const handleAddBeneficio = () => {
+    if (formData.beneficioInput.trim() && !formData.beneficios.includes(formData.beneficioInput.trim())) {
+      setFormData(prev => ({ 
+        ...prev, 
+        beneficios: [...prev.beneficios, prev.beneficioInput.trim()], 
+        beneficioInput: '' 
+      }));
+    }
+  };
+
+  const handleRemoveBeneficio = (index: number) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      beneficios: prev.beneficios.filter((_, i) => i !== index) 
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalLoading(true);
+    setModalError(null);
+    
+    try {
+      await oportunidadeService.adicionarOportunidade({
+        titulo: formData.titulo,
+        descricao: formData.descricao,
+        tipo: formData.tipo,
+        area: formData.area,
+        status: formData.status,
+        requisitos: formData.requisitos,
+        beneficios: formData.beneficios,
+        data_inicio: formData.data_inicio || undefined,
+        data_fim: formData.data_fim || undefined
+      });
+      
+      fecharModal();
+      fetchOportunidades(); // Recarregar lista
+    } catch (error: any) {
+      setModalError(error.message || 'Erro ao criar oportunidade');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   const filteredOportunidades = oportunidades.filter(oportunidade =>
     oportunidade.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     oportunidade.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     oportunidade.area.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const stats = user?.papel === 'chefe_empresa' ? {
+    abertas: oportunidades.filter(op => op.status === 'aprovado').length,
+    encerradas: oportunidades.filter(op => op.status === 'cancelado' || op.status === 'rejeitado').length,
+    totalRecomendacoes: oportunidades.reduce((acc, op) => acc + (op.total_recomendacoes || 0), 0)
+  } : null;
+
   return (
     <div className="min-h-screen bg-cursor-background py-8 px-4 sm:px-6 lg:px-8 page-transition">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 fade-in">
           <div>
             <h1 className="text-2xl font-bold text-cursor-text-primary">Oportunidades</h1>
             <p className="text-cursor-text-secondary mt-1">
@@ -137,7 +302,7 @@ const OportunidadesList: React.FC = () => {
 
             {user?.papel === 'chefe_empresa' && (
               <button
-                onClick={() => navigate(`${urlBase}/nova`)}
+                onClick={abrirModal}
                 className="btn-primary inline-flex items-center"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,13 +314,31 @@ const OportunidadesList: React.FC = () => {
           </div>
         </div>
 
-        <div className="card overflow-hidden">
+        {/* Stats for Chefe de Empresa */}
+        {user?.papel === 'chefe_empresa' && stats && !loading && oportunidades.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="card p-5">
+              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Vagas Abertas</h3>
+              <p className="text-2xl font-bold text-cursor-success">{stats.abertas}</p>
+            </div>
+            <div className="card p-5">
+              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Total de Recomendações</h3>
+              <p className="text-2xl font-bold text-cursor-primary">{stats.totalRecomendacoes}</p>
+            </div>
+            <div className="card p-5">
+              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Vagas Encerradas</h3>
+              <p className="text-2xl font-bold text-cursor-text-tertiary">{stats.encerradas}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="card overflow-hidden fade-in" style={{ animationDelay: '0.1s' }}>
           {loading ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cursor-primary"></div>
+              <div className="spinner rounded-full h-8 w-8 border-b-2 border-cursor-primary"></div>
             </div>
           ) : error ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 fade-in" style={{ animationDelay: '0.2s' }}>
               <div className="text-cursor-error mb-2">{error}</div>
               <button 
                 onClick={() => window.location.reload()}
@@ -165,7 +348,7 @@ const OportunidadesList: React.FC = () => {
               </button>
             </div>
           ) : filteredOportunidades.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 fade-in" style={{ animationDelay: '0.3s' }}>
               {searchTerm ? (
                 <>
                   <div className="h-16 w-16 mx-auto mb-4 text-cursor-text-tertiary">
@@ -207,7 +390,7 @@ const OportunidadesList: React.FC = () => {
                   </p>
                   {user?.papel === 'chefe_empresa' && (
                     <button 
-                      onClick={() => navigate(`${urlBase}/nova`)}
+                      onClick={abrirModal}
                       className="btn-primary"
                     >
                       Nova Oportunidade
@@ -242,8 +425,12 @@ const OportunidadesList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-cursor-border">
-                  {filteredOportunidades.map(oportunidade => (
-                    <tr key={oportunidade.id} className="hover:bg-cursor-background-light transition-colors">
+                  {filteredOportunidades.map((oportunidade, index) => (
+                    <tr 
+                      key={oportunidade.id} 
+                      className="hover:bg-cursor-background-light transition-colors stagger-item"
+                      style={{ animationDelay: `${0.1 + index * 0.05}s` }}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-cursor-text-primary">
                         {corrigirTexto(oportunidade.titulo)}
                       </td>
@@ -254,12 +441,8 @@ const OportunidadesList: React.FC = () => {
                         {formatarTexto(oportunidade.area)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`badge ${
-                          oportunidade.status === 'Aberta' ? 'badge-success' : 
-                          oportunidade.status === 'Fechada' ? 'badge-warning' : 
-                          'badge-default'
-                        }`}>
-                          {corrigirTexto(oportunidade.status)}
+                        <span className={`badge ${getStatusInfo(oportunidade.status).className}`}>
+                          {getStatusInfo(oportunidade.status).text}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-cursor-text-secondary">
@@ -281,6 +464,210 @@ const OportunidadesList: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Modal de Nova Oportunidade */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-cursor-background border border-cursor-border rounded-lg shadow-cursor-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-cursor-border">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-cursor-text-primary">Nova Oportunidade</h2>
+                <button
+                  onClick={fecharModal}
+                  className="text-cursor-text-tertiary hover:text-cursor-text-primary transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {/* Informações Básicas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-1">Título *</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={formData.titulo}
+                    onChange={handleChange}
+                    className="input-field w-full"
+                    placeholder="Ex: Desenvolvedor Web Júnior"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-1">Tipo *</label>
+                  <select
+                    name="tipo"
+                    value={formData.tipo}
+                    onChange={handleChange}
+                    className="input-field w-full"
+                    required
+                    disabled={loadingOpcoes}
+                  >
+                    <option value="">Selecione um tipo</option>
+                    {tiposVaga.map(tipo => (
+                      <option key={tipo} value={tipo}>{formatarTexto(tipo)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-1">Área *</label>
+                  <select
+                    name="area"
+                    value={formData.area}
+                    onChange={handleChange}
+                    className="input-field w-full"
+                    required
+                    disabled={loadingOpcoes}
+                  >
+                    <option value="">Selecione uma área</option>
+                    {areasAtuacao.map(area => (
+                      <option key={area} value={area}>{formatarTexto(area)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-1">Salário/Bolsa</label>
+                  <input
+                    type="text"
+                    name="salario"
+                    value={formData.salario}
+                    onChange={handleChange}
+                    className="input-field w-full"
+                    placeholder="Ex: R$ 2.000,00"
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="status">Status</label>
+                <select id="status" name="status" value={formData.status} onChange={handleChange} className="select-field" required>
+                  <option value="aprovado">Publicar Vaga (Aprovado)</option>
+                  <option value="pendente">Salvar como Rascunho (Pendente)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-cursor-text-primary mb-1">Descrição *</label>
+                <textarea
+                  name="descricao"
+                  value={formData.descricao}
+                  onChange={handleChange}
+                  className="input-field w-full"
+                  rows={3}
+                  placeholder="Descreva as principais atividades e responsabilidades"
+                  required
+                />
+              </div>
+
+              {/* Requisitos */}
+              <div>
+                <label className="block text-sm font-medium text-cursor-text-primary mb-1">Requisitos</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    name="requisitoInput"
+                    value={formData.requisitoInput}
+                    onChange={handleChange}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddRequisito(); }}}
+                    className="input-field flex-1"
+                    placeholder="Ex: Conhecimento em React"
+                  />
+                  <button type="button" className="btn-secondary" onClick={handleAddRequisito}>+</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.requisitos.map((req, idx) => (
+                    <span key={idx} className="badge badge-primary cursor-pointer" onClick={() => handleRemoveRequisito(idx)}>
+                      {req} ×
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Benefícios */}
+              <div>
+                <label className="block text-sm font-medium text-cursor-text-primary mb-1">Benefícios</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    name="beneficioInput"
+                    value={formData.beneficioInput}
+                    onChange={handleChange}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddBeneficio(); }}}
+                    className="input-field flex-1"
+                    placeholder="Ex: Vale Transporte"
+                  />
+                  <button type="button" className="btn-secondary" onClick={handleAddBeneficio}>+</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.beneficios.map((ben, idx) => (
+                    <span key={idx} className="badge badge-secondary cursor-pointer" onClick={() => handleRemoveBeneficio(idx)}>
+                      {ben} ×
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Datas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-1">Data de Início</label>
+                  <input
+                    type="date"
+                    name="data_inicio"
+                    value={formData.data_inicio}
+                    onChange={handleChange}
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-1">Data de Término</label>
+                  <input
+                    type="date"
+                    name="data_fim"
+                    value={formData.data_fim}
+                    onChange={handleChange}
+                    className="input-field w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Erro */}
+              {modalError && (
+                <div className="p-4 bg-cursor-error/10 border border-cursor-error/20 rounded">
+                  <p className="text-sm text-cursor-error">{modalError}</p>
+                </div>
+              )}
+
+              {/* Botões */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-cursor-border">
+                <button
+                  type="button"
+                  onClick={fecharModal}
+                  className="btn-secondary"
+                  disabled={modalLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={modalLoading}
+                >
+                  {modalLoading ? 'Criando...' : 'Criar Oportunidade'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

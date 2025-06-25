@@ -22,6 +22,7 @@ import oportunidadesRoutes from './routes/oportunidades.js';
 import opcoesRoutes from './routes/opcoes.js';
 import avaliacoesRoutes from './routes/avaliacoes.js';
 import recomendacoesRoutes from './routes/recomendacoes.js';
+import statsRoutes from './routes/stats.js';
 
 // Initialize app
 const app = express();
@@ -101,6 +102,7 @@ app.use('/api/oportunidades', oportunidadesRoutes);
 app.use('/api/opcoes', opcoesRoutes);
 app.use('/api/avaliacoes', avaliacoesRoutes);
 app.use('/api/recomendacoes', recomendacoesRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Default route
 app.get('/', (req, res) => {

@@ -275,11 +275,15 @@ const RecomendarJovem: React.FC = () => {
             <div>
               <p className="text-sm text-cursor-text-tertiary">Status</p>
               <span className={`badge ${
-                oportunidade.status === 'Aberta' ? 'badge-success' : 
-                oportunidade.status === 'Fechada' ? 'badge-warning' : 
+                oportunidade.status === 'aprovado' ? 'badge-success' : 
+                oportunidade.status === 'pendente' ? 'badge-warning' : 
                 'badge-default'
               }`}>
-                {oportunidade.status}
+                {oportunidade.status === 'aprovado' ? 'Aberta' : 
+                 oportunidade.status === 'pendente' ? 'Pendente' : 
+                 oportunidade.status === 'rejeitado' ? 'Rejeitada' : 
+                 oportunidade.status === 'cancelado' ? 'Cancelada' : 
+                 oportunidade.status}
               </span>
             </div>
           </div>

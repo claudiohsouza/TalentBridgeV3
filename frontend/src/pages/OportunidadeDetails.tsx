@@ -4,6 +4,22 @@ import { useAuth } from '../contexts/AuthContext';
 import { Oportunidade, Recomendacao } from '../types';
 import { oportunidadeService } from '../services/api';
 
+const getStatusInfo = (status: Oportunidade['status']) => {
+  switch (status) {
+    case 'aprovado':
+      return { text: 'Aberta', className: 'badge-success' };
+    case 'pendente':
+      return { text: 'Pendente', className: 'badge-warning' };
+    case 'rejeitado':
+      return { text: 'Rejeitada', className: 'badge-error' };
+    case 'cancelado':
+      return { text: 'Cancelada', className: 'badge-default' };
+    default:
+      const defaultStatus: string = status;
+      return { text: defaultStatus.charAt(0).toUpperCase() + defaultStatus.slice(1), className: 'badge-default' };
+  }
+};
+
 const OportunidadeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -109,15 +125,10 @@ const OportunidadeDetails: React.FC = () => {
           <div className="p-6 border-b border-cursor-border bg-cursor-background-light">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="flex items-center">
+                <div className="flex items-baseline">
                   <h2 className="text-xl font-semibold text-cursor-text-primary mr-3">{oportunidade.titulo}</h2>
-                  <span className={`badge ${
-                    oportunidade.status === 'Aberta' ? 'badge-success' : 
-                    oportunidade.status === 'Fechada' ? 'badge-warning' : 
-                    oportunidade.status === 'Encerrada' ? 'badge-default' :
-                    'badge-error'
-                  }`}>
-                    {oportunidade.status}
+                  <span className={`badge ${getStatusInfo(oportunidade.status).className}`}>
+                    {getStatusInfo(oportunidade.status).text}
                   </span>
                 </div>
                 <p className="text-cursor-text-secondary mt-1">
@@ -324,21 +335,22 @@ const OportunidadeDetails: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`badge ${
-                            recomendacao.status === 'Aprovada' ? 'badge-success' : 
-                            recomendacao.status === 'Rejeitada' ? 'badge-error' : 
+                            recomendacao.status === 'aprovado' ? 'badge-success' : 
+                            recomendacao.status === 'rejeitado' ? 'badge-error' : 
                             'badge-warning'
                           }`}>
-                            {recomendacao.status}
+                            {recomendacao.status === 'aprovado' ? 'Aprovada' : 
+                             recomendacao.status === 'rejeitado' ? 'Rejeitada' : 
+                             recomendacao.status === 'pendente' ? 'Pendente' : 
+                             recomendacao.status === 'cancelado' ? 'Cancelada' : 
+                             recomendacao.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <Link 
-                            to={`${getBasePath()}/jovens/${recomendacao.jovem_id}`}
-                            className="text-cursor-primary hover:text-cursor-primary-dark transition-colors mr-4"
-                          >
+                          <Link to={`/${getBasePath()}/jovens/${recomendacao.jovem_id}`} className="text-cursor-primary hover:text-cursor-primary-dark mr-2">
                             Ver perfil
                           </Link>
-                          {recomendacao.status === 'Pendente' && (
+                          {recomendacao.status === 'pendente' && (
                             <>
                               <button className="text-cursor-success hover:text-cursor-success/80 transition-colors mr-2">
                                 Aprovar
@@ -347,6 +359,16 @@ const OportunidadeDetails: React.FC = () => {
                                 Rejeitar
                               </button>
                             </>
+                          )}
+                          {recomendacao.status === 'aprovado' && (
+                            <span className="text-sm font-semibold text-cursor-success">
+                              Aprovado
+                            </span>
+                          )}
+                          {recomendacao.status === 'rejeitado' && (
+                            <span className="text-sm font-semibold text-cursor-error">
+                              Rejeitado
+                            </span>
                           )}
                         </td>
                       </tr>

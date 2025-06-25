@@ -43,9 +43,10 @@ const DashboardChefeEmpresa: React.FC = () => {
     fetchData();
   }, []);
 
-  // Filtrar oportunidades por status
-  const oportunidadesAbertas = oportunidades.filter(op => op.status === 'Aberta');
-  const oportunidadesFechadas = oportunidades.filter(op => op.status === 'Fechada');
+  // Estatísticas
+  const totalJovens = jovens.length;
+  const oportunidadesAbertas = oportunidades.filter(op => op.status === 'aprovado');
+  const totalRecomendacoes = oportunidades.reduce((acc, op) => acc + (op.total_recomendacoes || 0), 0);
   const jovensContratados = jovens.filter(jovem => 
     jovem.empresas?.some(empresa => empresa.status === 'Contratado')
   );
@@ -56,7 +57,7 @@ const DashboardChefeEmpresa: React.FC = () => {
   return (
     <div className="min-h-screen bg-cursor-background py-8 px-4 sm:px-6 lg:px-8 page-transition">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 fade-in">
           <div>
             <h1 className="text-2xl font-bold text-cursor-text-primary">Dashboard do Chefe de Empresa</h1>
             <p className="text-cursor-text-secondary mt-1">
@@ -66,10 +67,10 @@ const DashboardChefeEmpresa: React.FC = () => {
         </div>
 
         {/* Cards Informativos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300">
-            <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Jovens Vinculados</h2>
-            <p className="text-3xl font-bold text-cursor-primary">{loading ? '-' : jovens.length}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300 card-transition stagger-item">
+            <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Jovens Disponíveis</h2>
+            <p className="text-3xl font-bold text-cursor-primary">{loading ? '-' : totalJovens}</p>
             <Link 
               to="/chefe-empresa/jovens" 
               className="text-cursor-primary text-sm mt-2 inline-flex items-center hover:text-cursor-primary-dark transition-colors"
@@ -81,9 +82,9 @@ const DashboardChefeEmpresa: React.FC = () => {
             </Link>
           </div>
 
-          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300">
+          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300 card-transition stagger-item">
             <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Oportunidades Abertas</h2>
-            <p className="text-3xl font-bold text-cursor-primary">{loading ? '-' : oportunidadesAbertas.length}</p>
+            <p className="text-3xl font-bold text-cursor-success">{loading ? '-' : oportunidadesAbertas.length}</p>
             <Link 
               to="/chefe-empresa/oportunidades" 
               className="text-cursor-primary text-sm mt-2 inline-flex items-center hover:text-cursor-primary-dark transition-colors"
@@ -94,15 +95,31 @@ const DashboardChefeEmpresa: React.FC = () => {
               </svg>
             </Link>
           </div>
+
+          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300 card-transition stagger-item">
+            <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Total de Recomendações</h2>
+            <p className="text-3xl font-bold text-cursor-warning">{loading ? '-' : totalRecomendacoes}</p>
+            <p className="text-sm text-cursor-text-secondary mt-1">
+              Em vagas abertas
+            </p>
+          </div>
+
+          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300 card-transition stagger-item">
+            <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Taxa de Conversão</h2>
+            <p className="text-3xl font-bold text-cursor-secondary">{loading ? '-' : `${taxaAproveitamento}%`}</p>
+            <p className="text-sm text-cursor-text-secondary mt-1">
+              Jovens contratados
+            </p>
+          </div>
         </div>
 
         {/* Ações Rápidas */}
-        <div className="card p-6 mb-8">
+        <div className="card p-6 mb-8 fade-in" style={{ animationDelay: '0.2s' }}>
           <h2 className="text-lg font-semibold text-cursor-text-primary mb-4">Ações Rápidas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <button
-              onClick={() => navigate('/chefe-empresa/oportunidades/nova')}
-              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors"
+              onClick={() => navigate('/chefe-empresa/oportunidades?nova=true')}
+              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors card-transition"
             >
               <div className="text-center">
                 <svg className="w-8 h-8 mx-auto mb-2 text-cursor-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +131,7 @@ const DashboardChefeEmpresa: React.FC = () => {
 
             <button
               onClick={() => navigate('/chefe-empresa/jovens')}
-              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors"
+              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors card-transition"
             >
               <div className="text-center">
                 <svg className="w-8 h-8 mx-auto mb-2 text-cursor-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +143,7 @@ const DashboardChefeEmpresa: React.FC = () => {
 
             <button
               onClick={() => navigate('/chefe-empresa/oportunidades')}
-              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors"
+              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors card-transition"
             >
               <div className="text-center">
                 <svg className="w-8 h-8 mx-auto mb-2 text-cursor-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +155,7 @@ const DashboardChefeEmpresa: React.FC = () => {
 
             <button
               onClick={() => navigate('/perfil')}
-              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors"
+              className="flex items-center justify-center p-4 bg-cursor-background-light hover:bg-cursor-background-lighter rounded-lg transition-colors card-transition"
             >
               <div className="text-center">
                 <svg className="w-8 h-8 mx-auto mb-2 text-cursor-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +168,7 @@ const DashboardChefeEmpresa: React.FC = () => {
         </div>
 
         {/* Oportunidades em Destaque */}
-        <div className="card p-6 mb-8">
+        <div className="card p-6 mb-8 fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-cursor-text-primary">Oportunidades em Destaque</h2>
             <Link 
@@ -165,11 +182,16 @@ const DashboardChefeEmpresa: React.FC = () => {
             <div className="animate-pulse space-y-4">
               <div className="h-20 bg-cursor-background-light rounded"></div>
               <div className="h-20 bg-cursor-background-light rounded"></div>
+              <div className="h-20 bg-cursor-background-light rounded"></div>
             </div>
           ) : (
             <div className="space-y-4">
-              {oportunidades.slice(0, 3).map(op => (
-                <div key={op.id} className="p-4 bg-cursor-background-light rounded-lg hover:bg-cursor-background-lighter transition-colors">
+              {oportunidades.slice(0, 3).map((op, index) => (
+                <div 
+                  key={op.id} 
+                  className="p-4 bg-cursor-background-light rounded-lg hover:bg-cursor-background-lighter transition-colors stagger-item"
+                  style={{ animationDelay: `${0.1 + index * 0.1}s` }}
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-medium text-cursor-text-primary">{op.titulo}</h3>
@@ -180,6 +202,13 @@ const DashboardChefeEmpresa: React.FC = () => {
                         </span>
                         <span className="text-xs px-2 py-1 bg-cursor-primary/10 text-cursor-primary rounded-full">
                           {op.local}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full capitalize ${
+                          op.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                          op.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {op.status}
                         </span>
                       </div>
                     </div>
@@ -196,33 +225,35 @@ const DashboardChefeEmpresa: React.FC = () => {
           )}
         </div>
 
-        {/* Estatísticas */}
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold text-cursor-text-primary mb-4">Estatísticas</h2>
+        {/* Estatísticas Detalhadas */}
+        <div className="card p-6 fade-in" style={{ animationDelay: '0.4s' }}>
+          <h2 className="text-lg font-semibold text-cursor-text-primary mb-4">Estatísticas Detalhadas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-cursor-background-light rounded-lg">
+            <div className="p-4 bg-cursor-background-light rounded-lg card-transition">
               <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Total de Candidaturas</h3>
               <p className="text-2xl font-bold text-cursor-primary">
                 {loading ? '-' : oportunidades.reduce((acc, op) => acc + (op.vagas_preenchidas || 0), 0)}
               </p>
             </div>
-            <div className="p-4 bg-cursor-background-light rounded-lg">
-              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Vagas em Processo</h3>
+            <div className="p-4 bg-cursor-background-light rounded-lg card-transition">
+              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Média de Recomendações</h3>
               <p className="text-2xl font-bold text-cursor-primary">
-                {loading ? '-' : oportunidadesFechadas.length}
+                {loading ? '-' : oportunidades.length > 0 ? 
+                  (oportunidades.reduce((acc, op) => acc + (op.total_recomendacoes || 0), 0) / oportunidades.length).toFixed(1) : '0'
+                }
               </p>
             </div>
-            <div className="p-4 bg-cursor-background-light rounded-lg">
-              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Taxa de Conversão</h3>
+            <div className="p-4 bg-cursor-background-light rounded-lg card-transition">
+              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Jovens Contratados</h3>
               <p className="text-2xl font-bold text-cursor-primary">
-                {loading ? '-' : `${taxaAproveitamento}%`}
+                {loading ? '-' : jovensContratados.length}
               </p>
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-8" role="alert">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-8 fade-in" role="alert" style={{ animationDelay: '0.5s' }}>
             <strong className="font-bold">Erro! </strong>
             <span className="block sm:inline">{error}</span>
           </div>

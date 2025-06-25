@@ -206,7 +206,7 @@ const NovoJovem: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-cursor-background py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-cursor-background py-8 px-4 sm:px-6 lg:px-8 page-transition">
       <div className="max-w-7xl mx-auto">
         {/* Botão de Voltar */}
         <div className="mb-4">
@@ -232,71 +232,68 @@ const NovoJovem: React.FC = () => {
           </div>
         )}
 
-        <div className="card p-6">
+        <div className="card p-6 fade-in" style={{ animationDelay: '0.1s' }}>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {errors.nome && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded fade-in">
+                <strong className="font-bold">Erro! </strong>
+                <span className="block sm:inline">{errors.nome}</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="nome" className="block text-sm font-medium text-cursor-text-secondary mb-1">
+                <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                   Nome *
                 </label>
                 <input
                   type="text"
-                  id="nome"
                   name="nome"
                   value={formData.nome}
                   onChange={handleChange}
-                  className={`input-field w-full ${errors.nome ? 'border-cursor-error' : ''}`}
                   required
+                  className="input-field w-full"
+                  placeholder="Nome completo"
                 />
-                {errors.nome && (
-                  <p className="mt-1 text-sm text-cursor-error">{errors.nome}</p>
-                )}
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-cursor-text-secondary mb-1">
+                <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                   Email *
                 </label>
                 <input
                   type="email"
-                  id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`input-field w-full ${errors.email ? 'border-cursor-error' : ''}`}
                   required
+                  className="input-field w-full"
+                  placeholder="email@exemplo.com"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-cursor-error">{errors.email}</p>
-                )}
               </div>
 
               <div>
-                <label htmlFor="idade" className="block text-sm font-medium text-cursor-text-secondary mb-1">
+                <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                   Idade *
                 </label>
                 <input
                   type="number"
-                  id="idade"
                   name="idade"
                   value={formData.idade}
                   onChange={handleChange}
+                  required
                   min="14"
                   max="29"
-                  className={`input-field w-full ${errors.idade ? 'border-cursor-error' : ''}`}
-                  required
+                  className="input-field w-full"
+                  placeholder="18"
                 />
-                {errors.idade && (
-                  <p className="mt-1 text-sm text-cursor-error">{errors.idade}</p>
-                )}
               </div>
 
               <div>
-                <label htmlFor="formacao" className="block text-sm font-medium text-cursor-text-secondary mb-1">
+                <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                   Formação *
                 </label>
                 <select
-                  id="formacao"
                   name="formacao"
                   value={formData.formacao}
                   onChange={handleChange}
@@ -317,11 +314,10 @@ const NovoJovem: React.FC = () => {
 
               {formData.formacao && ['superior', 'pos_graduacao'].includes(formData.formacao) && (
                 <div>
-                  <label htmlFor="curso" className="block text-sm font-medium text-cursor-text-secondary mb-1">
+                  <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                     Curso *
                   </label>
                   <select
-                    id="curso"
                     name="curso"
                     value={formData.curso}
                     onChange={handleChange}
@@ -343,7 +339,7 @@ const NovoJovem: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-cursor-text-secondary mb-1">
+              <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                 Habilidades *
               </label>
               <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#333]">
@@ -379,7 +375,7 @@ const NovoJovem: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-cursor-text-secondary mb-1">
+              <label className="block text-sm font-medium text-cursor-text-primary mb-2">
                 Interesses *
               </label>
               <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#333]">
@@ -415,15 +411,14 @@ const NovoJovem: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="planos_futuros" className="block text-sm font-medium text-cursor-text-secondary mb-1">
-                Planos para o futuro *
+              <label className="block text-sm font-medium text-cursor-text-primary mb-2">
+                Planos Futuros *
               </label>
               <textarea
-                id="planos_futuros"
                 name="planos_futuros"
                 value={formData.planos_futuros}
                 onChange={handleChange}
-                rows={3}
+                rows={4}
                 className={`input-field w-full ${errors.planos_futuros ? 'border-cursor-error' : ''}`}
                 required
                 placeholder="Descreva os planos futuros do jovem..."
@@ -433,7 +428,7 @@ const NovoJovem: React.FC = () => {
               )}
             </div>
 
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-end gap-4 pt-6">
               <button
                 type="button"
                 onClick={() => navigate('/instituicao-ensino')}
@@ -444,15 +439,10 @@ const NovoJovem: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="btn-primary"
+                className={`btn-primary ${loading ? 'btn-loading' : ''}`}
                 disabled={loading}
               >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="loading-spinner mr-2"></div>
-                    Salvando...
-                  </div>
-                ) : 'Salvar jovem'}
+                {loading ? 'Cadastrando...' : 'Cadastrar Jovem'}
               </button>
             </div>
           </form>

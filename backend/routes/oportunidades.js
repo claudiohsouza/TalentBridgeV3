@@ -31,8 +31,23 @@ router.get('/', authMiddleware, async (req, res, next) => {
     const whereConditions = [];
     const params = [];
     
-    // Remover filtro por papel de usuário - permitir acesso a todos
-
+    // FILTRO POR EMPRESA: Se o usuário for chefe de empresa, mostrar apenas suas vagas.
+    if (req.user.papel === 'chefe_empresa') {
+      const empresaResult = await pool.query(
+        'SELECT id FROM chefes_empresas WHERE usuario_id = $1',
+        [req.user.id]
+      );
+      
+      if (empresaResult.rows.length > 0) {
+        const empresaId = empresaResult.rows[0].id;
+        params.push(empresaId);
+        whereConditions.push(`o.empresa_id = $${params.length}`);
+      } else {
+        // Se o chefe de empresa não tiver um perfil de empresa, retorna um array vazio.
+        return res.json([]);
+      }
+    }
+    
     if (status) {
       params.push(status);
       whereConditions.push(`o.status = $${params.length}`);
@@ -322,7 +337,7 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(oportuni
       console.error('[API-oportunidades] Pool de conexão não disponível');
       throw new Error('Erro de conexão com o banco de dados');
     }
-    const { titulo, descricao, tipo, requisitos, beneficios, data_inicio, data_fim, area } = req.body;
+    const { titulo, descricao, tipo, requisitos, beneficios, data_inicio, data_fim, area, status } = req.body;
     
     // Obter ID do chefe de empresa
     const empresa = await pool.query(
@@ -352,7 +367,7 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(oportuni
         beneficios || [],
         data_inicio || null,
         data_fim || null,
-        'pendente'
+        status || 'aprovado'
       ]
     );
     
@@ -366,8 +381,79 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(oportuni
   }
 });
 
+// Atualizar uma oportunidade (apenas donos da vaga)
+router.put('/:id', authMiddleware, checkRole(['chefe_empresa']), validate(oportunidadeSchema), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { titulo, descricao, tipo, area, requisitos, beneficios, data_inicio, data_fim } = req.body;
+    
+    // Obter ID do chefe de empresa e verificar se ele é o dono da vaga
+    const empresaResult = await req.db.query('SELECT id FROM chefes_empresas WHERE usuario_id = $1', [req.user.id]);
+    if (empresaResult.rows.length === 0) {
+      throw new ForbiddenError('Perfil de empresa não encontrado');
+    }
+    const empresaId = empresaResult.rows[0].id;
+
+    const oportunidadeResult = await req.db.query('SELECT empresa_id FROM oportunidades WHERE id = $1', [id]);
+    if (oportunidadeResult.rows.length === 0) {
+      throw new NotFoundError('Oportunidade não encontrada');
+    }
+    if (oportunidadeResult.rows[0].empresa_id !== empresaId) {
+      throw new ForbiddenError('Você não tem permissão para editar esta oportunidade');
+    }
+
+    const result = await req.db.query(
+      `UPDATE oportunidades
+       SET titulo = $1, descricao = $2, tipo = $3, area = $4, requisitos = $5, beneficios = $6, data_inicio = $7, data_fim = $8, atualizado_em = NOW()
+       WHERE id = $9
+       RETURNING *`,
+      [titulo, descricao, tipo, area, requisitos, beneficios, data_inicio, data_fim, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Oportunidade atualizada com sucesso',
+      oportunidade: result.rows[0]
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Excluir uma oportunidade
+router.delete('/:id', authMiddleware, checkRole(['chefe_empresa']), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Obter ID do chefe de empresa e verificar se ele é o dono da vaga
+    const empresaResult = await req.db.query('SELECT id FROM chefes_empresas WHERE usuario_id = $1', [req.user.id]);
+    if (empresaResult.rows.length === 0) {
+      throw new ForbiddenError('Perfil de empresa não encontrado');
+    }
+    const empresaId = empresaResult.rows[0].id;
+
+    const oportunidadeResult = await req.db.query('SELECT empresa_id FROM oportunidades WHERE id = $1', [id]);
+    if (oportunidadeResult.rows.length === 0) {
+      throw new NotFoundError('Oportunidade não encontrada');
+    }
+    if (oportunidadeResult.rows[0].empresa_id !== empresaId) {
+      throw new ForbiddenError('Você não tem permissão para excluir esta oportunidade');
+    }
+
+    await req.db.query('DELETE FROM oportunidades WHERE id = $1', [id]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Oportunidade excluída com sucesso'
+    });
+  } catch(error) {
+    next(error);
+  }
+});
+
 // Atualizar status de uma oportunidade
-router.put('/:id/status', authMiddleware, checkRole(['empresa']), async (req, res, next) => {
+router.put('/:id/status', authMiddleware, checkRole(['chefe_empresa']), async (req, res, next) => {
   try {
     console.log('[API-oportunidades] Recebida solicitação para atualizar status da oportunidade:', req.params.id);
     
@@ -424,79 +510,6 @@ router.put('/:id/status', authMiddleware, checkRole(['empresa']), async (req, re
       success: true,
       message: 'Status da oportunidade atualizado com sucesso',
       oportunidade: result.rows[0]
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Atualizar status de uma recomendação
-router.put('/recomendacao/:id/status', authMiddleware, checkRole(['empresa']), async (req, res, next) => {
-  try {
-    console.log('[API-oportunidades] Recebida solicitação para atualizar status da recomendação:', req.params.id);
-    
-    const pool = req.db;
-    if (!pool) {
-      console.error('[API-oportunidades] Pool de conexão não disponível');
-      throw new Error('Erro de conexão com o banco de dados');
-    }
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    if (!status) {
-      return res.status(400).json({ message: 'Status não fornecido' });
-    }
-    
-    // Verificar se o status é válido
-    const statusesValidos = ['pendente', 'aprovado', 'rejeitado', 'cancelado'];
-    if (!statusesValidos.includes(status)) {
-      return res.status(400).json({ message: 'Status inválido' });
-    }
-    
-    // Verificar se a recomendação existe
-    const recomendacaoQuery = await pool.query(
-      `SELECT r.*, o.empresa_id 
-       FROM recomendacoes r
-       JOIN oportunidades o ON r.oportunidade_id = o.id
-       WHERE r.id = $1`,
-      [id]
-    );
-    
-    if (recomendacaoQuery.rows.length === 0) {
-      throw new NotFoundError('Recomendação não encontrada');
-    }
-    
-    // Verificar se a empresa é a dona da oportunidade
-    const recomendacao = recomendacaoQuery.rows[0];
-    const empresa = await pool.query(
-      'SELECT id FROM chefes_empresas WHERE usuario_id = $1',
-      [req.user.id]
-    );
-    
-    if (empresa.rows.length === 0) {
-      return res.status(400).json({ message: 'Perfil de empresa não encontrado' });
-    }
-    
-    const empresaId = empresa.rows[0].id;
-    
-    if (recomendacao.empresa_id !== empresaId) {
-      throw new ForbiddenError('Sem permissão para atualizar esta recomendação');
-    }
-    
-    // Atualizar status
-    const result = await pool.query(
-      `UPDATE recomendacoes
-       SET status = $1,
-           atualizado_em = NOW()
-       WHERE id = $2
-       RETURNING *`,
-      [status, id]
-    );
-    
-    res.json({
-      success: true,
-      message: 'Status da recomendação atualizado com sucesso',
-      recomendacao: result.rows[0]
     });
   } catch (error) {
     next(error);

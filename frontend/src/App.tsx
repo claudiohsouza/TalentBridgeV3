@@ -12,15 +12,13 @@ import DashboardChefeEmpresa from './pages/DashboardChefeEmpresa';
 import DashboardInstituicaoContratante from './pages/DashboardInstituicaoContratante';
 import Home from './pages/Home';
 import Perfil from './pages/Perfil';
-import AlterarSenhaPage from './pages/AlterarSenhaPage';
+import AlterarSenha from './pages/AlterarSenha';
 import JovensList from './pages/JovensList';
 import JovemDetails from './pages/JovemDetails';
 import OportunidadesList from './pages/OportunidadesList';
 import OportunidadeDetails from './pages/OportunidadeDetails';
-import NovaOportunidade from './pages/NovaOportunidade';
 import NovoJovem from './pages/NovoJovem';
 import RecomendarJovem from './pages/RecomendarJovem';
-import JovensRecomendados from './pages/JovensRecomendados';
 
 // Componente para rotas protegidas
 type ProtectedRouteProps = {
@@ -59,7 +57,7 @@ function App() {
 
           {/* Rotas comuns protegidas */}
           <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-          <Route path="/alterar-senha" element={<ProtectedRoute><AlterarSenhaPage /></ProtectedRoute>} />
+          <Route path="/alterar-senha" element={<ProtectedRoute><AlterarSenha /></ProtectedRoute>} />
 
           {/* Rotas para Instituição de Ensino */}
           <Route 
@@ -105,10 +103,6 @@ function App() {
             element={<ProtectedRoute allowedRole="chefe_empresa"><OportunidadesList /></ProtectedRoute>} 
           />
           <Route 
-            path="/chefe-empresa/oportunidades/nova" 
-            element={<ProtectedRoute allowedRole="chefe_empresa"><NovaOportunidade /></ProtectedRoute>} 
-          />
-          <Route 
             path="/chefe-empresa/oportunidades/:id" 
             element={<ProtectedRoute allowedRole="chefe_empresa"><OportunidadeDetails /></ProtectedRoute>} 
           />
@@ -121,26 +115,6 @@ function App() {
           <Route 
             path="/instituicao-contratante" 
             element={<ProtectedRoute allowedRole="instituicao_contratante"><DashboardInstituicaoContratante /></ProtectedRoute>} 
-          />
-          <Route 
-            path="/instituicao-contratante/jovens" 
-            element={<ProtectedRoute allowedRole="instituicao_contratante"><JovensList /></ProtectedRoute>} 
-          />
-          <Route 
-            path="/instituicao-contratante/jovens/:id" 
-            element={<ProtectedRoute allowedRole="instituicao_contratante"><JovemDetails /></ProtectedRoute>} 
-          />
-          <Route 
-            path="/instituicao-contratante/oportunidades" 
-            element={<ProtectedRoute allowedRole="instituicao_contratante"><OportunidadesList /></ProtectedRoute>} 
-          />
-          <Route 
-            path="/instituicao-contratante/oportunidades/:id" 
-            element={<ProtectedRoute allowedRole="instituicao_contratante"><OportunidadeDetails /></ProtectedRoute>} 
-          />
-          <Route 
-            path="/instituicao-contratante/jovens-recomendados" 
-            element={<ProtectedRoute allowedRole="instituicao_contratante"><JovensRecomendados /></ProtectedRoute>} 
           />
 
           {/* Rota 404 - Redireciona para a página inicial */}

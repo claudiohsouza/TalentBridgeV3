@@ -9,7 +9,7 @@ import {
 } from '../types';
 import { AvaliacoesJovem } from '../components/AvaliacoesJovem';
 import { avaliacoesService } from '../services/avaliacoes';
-import { jovemService } from '../services/api';
+import { jovemService, contatoService } from '../services/api';
 import { Checkbox, CheckboxGroup } from '@chakra-ui/react';
 
 // Função para formatar a formação
@@ -42,6 +42,167 @@ const capitalizarPalavras = (texto: string | undefined | null): string => {
   ).join(' ');
 };
 
+// Modal de Contato
+const ContactModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  jovem: Jovem;
+  user: any;
+}> = ({ isOpen, onClose, jovem, user }) => {
+  const [formData, setFormData] = useState({
+    assunto: '',
+    mensagem: '',
+    tipoContato: 'email'
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Usar o serviço real de contato
+      await contatoService.enviarContato({
+        jovem_id: jovem.id,
+        assunto: formData.assunto,
+        mensagem: formData.mensagem,
+        tipo_contato: formData.tipoContato
+      });
+
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+        setSuccess(false);
+        setFormData({ assunto: '', mensagem: '', tipoContato: 'email' });
+      }, 2000);
+    } catch (error) {
+      console.error('Erro ao enviar contato:', error);
+      // Aqui você poderia adicionar um estado de erro para mostrar mensagem ao usuário
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-cursor-background-light border border-cursor-border rounded-lg p-6 w-full max-w-md animate-slide-up">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-cursor-text-primary">
+            Entrar em Contato
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-cursor-text-tertiary hover:text-cursor-text-primary transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {success ? (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-cursor-text-primary mb-2">
+              Contato Enviado!
+            </h3>
+            <p className="text-cursor-text-secondary">
+              Sua mensagem foi enviada com sucesso para {jovem.nome}.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
+                Para
+              </label>
+              <div className="p-3 bg-cursor-background border border-cursor-border rounded-lg">
+                <p className="text-cursor-text-primary font-medium">{jovem.nome}</p>
+                <p className="text-cursor-text-secondary text-sm">{jovem.email}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
+                Tipo de Contato
+              </label>
+              <select
+                value={formData.tipoContato}
+                onChange={(e) => setFormData(prev => ({ ...prev, tipoContato: e.target.value }))}
+                className="input-field w-full"
+              >
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="telefone">Telefone</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
+                Assunto *
+              </label>
+              <input
+                type="text"
+                value={formData.assunto}
+                onChange={(e) => setFormData(prev => ({ ...prev, assunto: e.target.value }))}
+                placeholder="Ex: Oportunidade de estágio"
+                className="input-field w-full"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
+                Mensagem *
+              </label>
+              <textarea
+                value={formData.mensagem}
+                onChange={(e) => setFormData(prev => ({ ...prev, mensagem: e.target.value }))}
+                placeholder="Digite sua mensagem..."
+                rows={4}
+                className="input-field w-full resize-none"
+                required
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-secondary flex-1"
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn-primary flex-1"
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Enviando...
+                  </div>
+                ) : (
+                  'Enviar Contato'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const JovemDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -55,6 +216,7 @@ const JovemDetails: React.FC = () => {
   const [historico, setHistorico] = useState<HistoricoDesenvolvimento[]>([]);
   const [selectedHabilidades, setSelectedHabilidades] = useState<string[]>([]);
   const [selectedInteresses, setSelectedInteresses] = useState<string[]>([]);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -254,6 +416,17 @@ const JovemDetails: React.FC = () => {
                 </button>
               </>
             )}
+            {user?.papel === 'instituicao_contratante' && (
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="btn-primary inline-flex items-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Entrar em Contato
+              </button>
+            )}
           </div>
         </div>
 
@@ -273,14 +446,14 @@ const JovemDetails: React.FC = () => {
           <div className="card p-6">
             <h3 className="text-lg font-semibold text-cursor-text-primary mb-2">Status</h3>
             <div className="flex items-center gap-2 mt-6">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                jovem.status === 'Ativo' ? 'bg-green-100 text-green-800' :
-                jovem.status === 'Inativo' ? 'bg-red-100 text-red-800' :
+              <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 capitalize ${
+                jovem.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                jovem.status === 'rejeitado' || jovem.status === 'cancelado' ? 'bg-red-100 text-red-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d={jovem.status === 'Ativo' ? 
+                    d={jovem.status === 'aprovado' ? 
                       "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : 
                       "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
                     } 
@@ -309,11 +482,15 @@ const JovemDetails: React.FC = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-cursor-text-primary font-medium">{oportunidade.titulo}</span>
                       <span className={`badge ${
-                        oportunidade.status === 'Aberta' ? 'badge-success' : 
-                        oportunidade.status === 'Fechada' ? 'badge-warning' : 
+                        oportunidade.status === 'aprovado' ? 'badge-success' : 
+                        oportunidade.status === 'pendente' ? 'badge-warning' : 
                         'badge-default'
                       }`}>
-                        {oportunidade.status}
+                        {oportunidade.status === 'aprovado' ? 'Aberta' : 
+                         oportunidade.status === 'pendente' ? 'Pendente' : 
+                         oportunidade.status === 'rejeitado' ? 'Rejeitada' : 
+                         oportunidade.status === 'cancelado' ? 'Cancelada' : 
+                         oportunidade.status}
                       </span>
                     </div>
                   </div>
@@ -421,6 +598,16 @@ const JovemDetails: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Modal de Contato */}
+        {jovem && user && (
+          <ContactModal
+            isOpen={showContactModal}
+            onClose={() => setShowContactModal(false)}
+            jovem={jovem}
+            user={user}
+          />
+        )}
       </div>
     </div>
   );

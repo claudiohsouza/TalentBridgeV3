@@ -8,48 +8,58 @@ const router = express.Router();
 // Listar jovens com recomendações e oportunidades (para instituição contratante)
 router.get('/recomendados', authMiddleware, checkRole(['instituicao_contratante']), async (req, res) => {
   try {
-    // Buscar todos os jovens com suas recomendações e oportunidades em uma única query
+    // Buscar todos os jovens com suas recomendações e pontuação calculada
     const result = await req.db.query(`
-      WITH jovens_recomendacoes AS (
+      WITH historico_pontos AS (
         SELECT 
-          j.*,
+          h.jovem_id,
+          SUM(
+            CASE h.tipo
+              WHEN 'conquista' THEN 5
+              WHEN 'projeto' THEN 4
+              WHEN 'certificacao' THEN 3
+              WHEN 'curso' THEN 2
+              ELSE 0
+            END
+          ) as pontos
+        FROM historico_desenvolvimento h
+        GROUP BY h.jovem_id
+      ),
+      jovens_recomendacoes AS (
+        SELECT 
+          j.id,
+          j.nome,
+          j.email,
+          j.idade,
+          j.formacao,
+          j.curso,
+          j.habilidades,
+          j.interesses,
+          j.planos_futuros,
+          j.status,
           COALESCE(
-            json_agg(
-              CASE 
-                WHEN r.id IS NOT NULL THEN
-                  json_build_object(
-                    'id', r.id,
-                    'status', r.status,
-                    'oportunidade', json_build_object(
-                      'id', o.id,
-                      'titulo', o.titulo,
-                      'status', o.status
-                    )
-                  )
-                ELSE NULL
-              END
+            json_agg(DISTINCT
+              jsonb_build_object(
+                'id', r.id,
+                'status', r.status,
+                'oportunidade_id', o.id,
+                'jovem_id', j.id,
+                'oportunidade_titulo', o.titulo
+              )
             ) FILTER (WHERE r.id IS NOT NULL),
-            '[]'::json
-          ) as recomendacoes
+            '[]'::jsonb
+          ) as recomendacoes,
+          ROUND(LEAST(COALESCE(hp.pontos, 0) * 5.0 / 20.0, 5.0), 1) as pontuacao_desenvolvimento
         FROM jovens j
         LEFT JOIN recomendacoes r ON j.id = r.jovem_id
         LEFT JOIN oportunidades o ON r.oportunidade_id = o.id
-        GROUP BY j.id
+        LEFT JOIN historico_pontos hp ON hp.jovem_id = j.id
+        WHERE j.status <> 'contratado'
+        GROUP BY j.id, hp.pontos
       )
-      SELECT 
-        id,
-        nome,
-        email,
-        idade,
-        formacao,
-        curso,
-        habilidades,
-        interesses,
-        planos_futuros,
-        status,
-        recomendacoes
+      SELECT *
       FROM jovens_recomendacoes
-      WHERE jsonb_array_length(recomendacoes::jsonb) > 0
+      WHERE jsonb_array_length(recomendacoes) > 0
       ORDER BY nome
     `);
 
@@ -323,113 +333,6 @@ router.post('/', authMiddleware, checkRole(['instituicao_ensino']), validate(jov
   } catch (error) {
     console.error('Erro ao cadastrar jovem:', error);
     res.status(500).json({ message: 'Erro ao cadastrar jovem' });
-  }
-});
-
-// Rota para recomendação de jovens para oportunidades
-router.post('/recomendar', authMiddleware, checkRole(['instituicao_ensino', 'chefe_empresa']), validate(recomendacaoSchema), async (req, res, next) => {
-  try {
-    const { jovem_id, oportunidade_id, justificativa } = req.body;
-    
-    if (!jovem_id || !oportunidade_id || !justificativa) {
-      return res.status(400).json({ message: 'Dados incompletos para recomendação' });
-    }
-    
-    // Verificar se o jovem existe
-    const jovemExiste = await req.db.query('SELECT id FROM jovens WHERE id = $1', [jovem_id]);
-    if (jovemExiste.rows.length === 0) {
-      return next(new NotFoundError('Jovem não encontrado'));
-    }
-    
-    // Verificar se a oportunidade existe
-    const oportunidadeExiste = await req.db.query('SELECT id FROM oportunidades WHERE id = $1', [oportunidade_id]);
-    if (oportunidadeExiste.rows.length === 0) {
-      return next(new NotFoundError('Oportunidade não encontrada'));
-    }
-    
-    // Determinar o tipo e id do recomendador
-    let recomendadorTipo = req.user.papel;
-    let recomendadorId;
-    
-    if (recomendadorTipo === 'instituicao_ensino') {
-      const result = await req.db.query(
-        'SELECT id FROM instituicoes_ensino WHERE usuario_id = $1',
-        [req.user.id]
-      );
-      
-      if (result.rows.length === 0) {
-        return res.status(400).json({ message: 'Perfil de instituição não encontrado' });
-      }
-      
-      recomendadorId = result.rows[0].id;
-      
-      // Verificar se o jovem está vinculado a esta instituição
-      const vinculo = await req.db.query(
-        'SELECT id FROM jovens_instituicoes WHERE jovem_id = $1 AND instituicao_id = $2',
-        [jovem_id, recomendadorId]
-      );
-      
-      if (vinculo.rows.length === 0) {
-        return next(new ForbiddenError('Jovem não está vinculado a esta instituição'));
-      }
-    } 
-    else if (recomendadorTipo === 'chefe_empresa') {
-      const result = await req.db.query(
-        'SELECT id FROM chefes_empresas WHERE usuario_id = $1',
-        [req.user.id]
-      );
-      
-      if (result.rows.length === 0) {
-        return res.status(400).json({ message: 'Perfil de empresa não encontrado' });
-      }
-      
-      recomendadorId = result.rows[0].id;
-      
-      // Verificar se o jovem está vinculado a esta empresa
-      const vinculo = await req.db.query(
-        'SELECT id FROM jovens_chefes_empresas WHERE jovem_id = $1 AND chefe_empresa_id = $2',
-        [jovem_id, recomendadorId]
-      );
-      
-      if (vinculo.rows.length === 0) {
-        return next(new ForbiddenError('Jovem não está vinculado a esta empresa'));
-      }
-    }
-    
-    // Verificar se já existe uma recomendação similar
-    const recomendacaoExistente = await req.db.query(
-      `SELECT id FROM recomendacoes 
-       WHERE jovem_id = $1 
-       AND oportunidade_id = $2 
-       AND recomendador_tipo = $3 
-       AND recomendador_id = $4`,
-      [jovem_id, oportunidade_id, recomendadorTipo, recomendadorId]
-    );
-    
-    if (recomendacaoExistente.rows.length > 0) {
-      return res.status(400).json({ message: 'Recomendação já existe' });
-    }
-    
-    // Inserir recomendação
-    try {
-      const result = await req.db.query(
-        `INSERT INTO recomendacoes 
-         (jovem_id, oportunidade_id, recomendador_tipo, recomendador_id, justificativa, status)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        [jovem_id, oportunidade_id, recomendadorTipo, recomendadorId, justificativa, 'pendente']
-      );
-      
-      res.status(201).json({
-        success: true,
-        message: 'Recomendação realizada com sucesso',
-        recomendacao: result.rows[0]
-      });
-    } catch (dbError) {
-      return next(new DatabaseError('Erro ao salvar recomendação', { error: dbError.message }));
-    }
-  } catch (error) {
-    next(error);
   }
 });
 

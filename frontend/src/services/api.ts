@@ -290,7 +290,7 @@ export const jovemService = {
   // Adicionar registro de histórico
   async adicionarHistorico(id: number, historico: HistoricoDesenvolvimentoInput): Promise<HistoricoDesenvolvimento> {
     try {
-      const response = await api.post<HistoricoDesenvolvimento>(`/jovens/${id}/historico`, historico);
+      const response = await api.post<HistoricoDesenvolvimento>(`/api/jovens/${id}/historico`, historico);
       return decodeObject(response.data);
     } catch (error) {
       console.error('Erro ao adicionar histórico:', error);
@@ -337,7 +337,7 @@ export const oportunidadeService = {
   
   adicionarOportunidade: async (oportunidade: OportunidadeInput): Promise<Oportunidade> => {
     try {
-      console.log('[Oportunidade Service] Adicionando oportunidade:', oportunidade.titulo);
+      console.log('[Oportunidade Service] Adicionando oportunidade:', oportunidade.titulo, 'com status:', oportunidade.status);
       const response = await api.post<Oportunidade>('/api/oportunidades', oportunidade);
       console.log('[Oportunidade Service] Oportunidade adicionada:', response.data);
       return response.data;
@@ -375,17 +375,15 @@ export const oportunidadeService = {
   recomendarJovem: async ({ jovem_id, oportunidade_id, justificativa }: { jovem_id: string | number, oportunidade_id: string | number, justificativa: string }) => {
     try {
       console.log('[Oportunidade Service] Recomendando jovem:', { jovem_id, oportunidade_id });
-      const response = await api.post('/api/recomendacoes', {
-        jovem_id,
-        oportunidade_id,
+      const response = await recomendacaoService.criarRecomendacao({
+        jovem_id: Number(jovem_id),
+        oportunidade_id: Number(oportunidade_id),
         justificativa
       });
       
-      // Atualizar os dados do jovem após a recomendação
-      const jovemAtualizado = await jovemService.getJovem(Number(jovem_id));
-      console.log('[Oportunidade Service] Jovem atualizado após recomendação:', jovemAtualizado);
+      console.log('[Oportunidade Service] Recomendação realizada com sucesso:', response);
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('[Oportunidade Service] Erro ao recomendar jovem:', error);
       throw error;
@@ -409,6 +407,119 @@ export const opcoesService = {
     const response = await api.get(`/api/opcoes/${categoria}`);
     return response.data;
   }
+};
+
+// Serviço de Contatos
+export const contatoService = {
+  enviarContato: async (data: {
+    jovem_id: number;
+    assunto: string;
+    mensagem: string;
+    tipo_contato?: string;
+  }): Promise<any> => {
+    try {
+      console.log('[Contato Service] Enviando contato:', data);
+      const response = await api.post('/api/usuarios/contato', data);
+      console.log('[Contato Service] Contato enviado com sucesso:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[Contato Service] Erro ao enviar contato:', error);
+      throw error;
+    }
+  },
+
+  listarContatos: async (): Promise<any[]> => {
+    try {
+      console.log('[Contato Service] Listando contatos');
+      const response = await api.get('/api/usuarios/contatos');
+      console.log('[Contato Service] Contatos encontrados:', response.data.length);
+      return response.data;
+    } catch (error) {
+      console.error('[Contato Service] Erro ao listar contatos:', error);
+      throw error;
+    }
+  }
+};
+
+// Serviço de Recomendações
+export const recomendacaoService = {
+  criarRecomendacao: async (data: {
+    jovem_id: number;
+    oportunidade_id: number;
+    justificativa: string;
+  }): Promise<any> => {
+    try {
+      console.log('[Recomendacao Service] Criando recomendação:', data);
+      const response = await api.post('/api/recomendacoes', data);
+      console.log('[Recomendacao Service] Recomendação criada com sucesso:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[Recomendacao Service] Erro ao criar recomendação:', error);
+      throw error;
+    }
+  },
+
+  listarRecomendacoes: async (filtros?: {
+    status?: string;
+    jovem_id?: number;
+    oportunidade_id?: number;
+  }): Promise<any> => {
+    try {
+      console.log('[Recomendacao Service] Listando recomendações');
+      const params = new URLSearchParams();
+      if (filtros?.status) params.append('status', filtros.status);
+      if (filtros?.jovem_id) params.append('jovem_id', filtros.jovem_id.toString());
+      if (filtros?.oportunidade_id) params.append('oportunidade_id', filtros.oportunidade_id.toString());
+      
+      const url = `/api/recomendacoes${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await api.get(url);
+      console.log('[Recomendacao Service] Recomendações encontradas:', response.data.data?.length || 0);
+      return response.data;
+    } catch (error) {
+      console.error('[Recomendacao Service] Erro ao listar recomendações:', error);
+      throw error;
+    }
+  },
+
+  atualizarStatusRecomendacao: async (id: number, status: 'em_processo' | 'contratado' | 'rejeitado'): Promise<any> => {
+    try {
+      console.log('[Recomendacao Service] Atualizando status da recomendação:', id, status);
+      const response = await api.put(`/api/recomendacoes/${id}/status`, { status });
+      console.log('[Recomendacao Service] Status atualizado com sucesso:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[Recomendacao Service] Erro ao atualizar status:', error);
+      throw error;
+    }
+  }
+};
+
+// Serviço de Estatísticas
+export const statsService = {
+  getStats: async (): Promise<{ jovens: number; oportunidades: number; empresas: number; contratacoes: number; }> => {
+    try {
+      console.log('[Stats Service] Buscando estatísticas');
+      const response = await api.get('/api/stats');
+      console.log('[Stats Service] Estatísticas recuperadas:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[Stats Service] Erro ao buscar estatísticas:', error);
+      // Retornar valores padrão em caso de erro para não quebrar a página
+      return { jovens: 0, oportunidades: 0, empresas: 0, contratacoes: 0 };
+    }
+  },
+
+  getFeatured: async (): Promise<{ featured: any; others: any[] }> => {
+    try {
+      console.log('[Stats Service] Buscando dados em destaque');
+      const response = await api.get('/api/stats/featured');
+      console.log('[Stats Service] Dados em destaque recuperados:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[Stats Service] Erro ao buscar dados em destaque:', error);
+      return { featured: null, others: [] };
+    }
+  },
 };
 
 export default api; 

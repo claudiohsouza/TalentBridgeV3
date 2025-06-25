@@ -249,4 +249,135 @@ router.put('/alterar-senha', authMiddleware, async (req, res, next) => {
   }
 });
 
+// Rota para enviar contato
+router.post('/contato', authMiddleware, async (req, res, next) => {
+  try {
+    const { jovem_id, assunto, mensagem, tipo_contato } = req.body;
+    const pool = req.db;
+
+    // Verificar se o usuário é uma instituição contratante
+    if (req.user.papel !== 'instituicao_contratante') {
+      return res.status(403).json({ 
+        message: 'Apenas instituições contratantes podem enviar contatos' 
+      });
+    }
+
+    // Verificar se o jovem existe
+    const jovemResult = await pool.query(
+      'SELECT id, nome, email FROM jovens WHERE id = $1',
+      [jovem_id]
+    );
+
+    if (jovemResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Jovem não encontrado' });
+    }
+
+    const jovem = jovemResult.rows[0];
+
+    // Buscar dados da instituição contratante
+    const instituicaoResult = await pool.query(
+      'SELECT * FROM instituicoes_contratantes WHERE usuario_id = $1',
+      [req.user.id]
+    );
+
+    if (instituicaoResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Perfil de instituição não encontrado' });
+    }
+
+    const instituicao = instituicaoResult.rows[0];
+
+    // Registrar o contato no banco de dados
+    const contatoResult = await pool.query(
+      `INSERT INTO contatos (
+        jovem_id, 
+        instituicao_id, 
+        assunto, 
+        mensagem, 
+        tipo_contato, 
+        status,
+        criado_em
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING *`,
+      [
+        jovem_id,
+        instituicao.id,
+        assunto,
+        mensagem,
+        tipo_contato || 'email',
+        'enviado'
+      ]
+    );
+
+    // Log do contato para demonstração
+    console.log('Contato registrado:', {
+      de: req.user.email,
+      para: jovem.email,
+      assunto,
+      mensagem,
+      tipo_contato,
+      data: new Date().toISOString()
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Contato enviado com sucesso',
+      contato: contatoResult.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Erro ao enviar contato:', error);
+    next(error);
+  }
+});
+
+// Rota para listar contatos de uma instituição
+router.get('/contatos', authMiddleware, async (req, res, next) => {
+  try {
+    const pool = req.db;
+
+    // Verificar se o usuário é uma instituição contratante
+    if (req.user.papel !== 'instituicao_contratante') {
+      return res.status(403).json({ 
+        message: 'Apenas instituições contratantes podem visualizar contatos' 
+      });
+    }
+
+    // Buscar ID da instituição
+    const instituicaoResult = await pool.query(
+      'SELECT id FROM instituicoes_contratantes WHERE usuario_id = $1',
+      [req.user.id]
+    );
+
+    if (instituicaoResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Perfil de instituição não encontrado' });
+    }
+
+    const instituicaoId = instituicaoResult.rows[0].id;
+
+    // Buscar contatos
+    const contatosResult = await pool.query(
+      `SELECT 
+        c.id,
+        c.assunto,
+        c.mensagem,
+        c.tipo_contato,
+        c.status,
+        c.criado_em,
+        j.nome as jovem_nome,
+        j.email as jovem_email
+       FROM contatos c
+       JOIN jovens j ON c.jovem_id = j.id
+       WHERE c.instituicao_id = $1
+       ORDER BY c.criado_em DESC`,
+      [instituicaoId]
+    );
+
+    res.json(contatosResult.rows);
+
+  } catch (error) {
+    console.error('Erro ao buscar contatos:', error);
+    next(error);
+  }
+});
+
 export default router; 

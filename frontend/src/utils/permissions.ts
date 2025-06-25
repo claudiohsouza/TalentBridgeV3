@@ -10,7 +10,8 @@ export type Permission =
   | 'read:oportunidade'
   | 'update:oportunidade'
   | 'delete:oportunidade'
-  | 'recommend:jovem';
+  | 'recommend:jovem'
+  | 'update:recomendacao';
 
 // Map roles to permissions
 const rolePermissions: Record<UserRole, Permission[]> = {
@@ -19,8 +20,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'read:jovem',
     'update:jovem',
     'delete:jovem',
-    'read:oportunidade',
-    'recommend:jovem'
+    'read:oportunidade'
   ],
   'chefe_empresa': [
     'read:jovem',
@@ -33,9 +33,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
   'instituicao_contratante': [
     'read:jovem',
     'read:oportunidade',
-    'create:oportunidade',
-    'update:oportunidade',
-    'delete:oportunidade'
+    'update:recomendacao'
   ]
 };
 

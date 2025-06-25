@@ -126,6 +126,13 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(recomend
   try {
     const { jovem_id, oportunidade_id, justificativa } = req.body;
     
+    console.log('[API-recomendacoes] Criando recomendação:', {
+      jovem_id,
+      oportunidade_id,
+      recomendador_tipo: req.user.papel,
+      recomendador_id: req.user.id
+    });
+    
     // Verificar se o jovem existe
     const jovemExiste = await req.db.query('SELECT id FROM jovens WHERE id = $1', [jovem_id]);
     if (jovemExiste.rows.length === 0) {
@@ -142,29 +149,7 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(recomend
     let recomendadorTipo = req.user.papel;
     let recomendadorId;
     
-    if (recomendadorTipo === 'instituicao_ensino') {
-      const result = await req.db.query(
-        'SELECT id FROM instituicoes_ensino WHERE usuario_id = $1',
-        [req.user.id]
-      );
-      
-      if (result.rows.length === 0) {
-        throw new NotFoundError('Perfil de instituição não encontrado');
-      }
-      
-      recomendadorId = result.rows[0].id;
-      
-      // Verificar se o jovem está vinculado a esta instituição
-      const vinculo = await req.db.query(
-        'SELECT id FROM jovens_instituicoes WHERE jovem_id = $1 AND instituicao_id = $2',
-        [jovem_id, recomendadorId]
-      );
-      
-      if (vinculo.rows.length === 0) {
-        throw new ForbiddenError('Jovem não está vinculado a esta instituição');
-      }
-    } 
-    else if (recomendadorTipo === 'chefe_empresa') {
+    if (recomendadorTipo === 'chefe_empresa') {
       const result = await req.db.query(
         'SELECT id FROM chefes_empresas WHERE usuario_id = $1',
         [req.user.id]
@@ -175,20 +160,38 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(recomend
       }
       
       recomendadorId = result.rows[0].id;
+      
+      // Verificar se o jovem está vinculado a esta empresa
+      const vinculo = await req.db.query(
+        'SELECT id FROM jovens_chefes_empresas WHERE jovem_id = $1 AND chefe_empresa_id = $2',
+        [jovem_id, recomendadorId]
+      );
+      
+      if (vinculo.rows.length === 0) {
+        throw new ForbiddenError('Jovem não está vinculado a esta empresa');
+      }
+    } else {
+      throw new ForbiddenError('Apenas chefes de empresa podem fazer recomendações');
     }
     
-    // Verificar se já existe uma recomendação similar
+    // Verificar se já existe uma recomendação similar (validação adicional)
     const recomendacaoExistente = await req.db.query(
-      `SELECT id FROM recomendacoes 
+      `SELECT id, status FROM recomendacoes 
        WHERE jovem_id = $1 
        AND oportunidade_id = $2 
-       AND recomendador_id = $3 
-       AND recomendador_tipo = $4`,
-      [jovem_id, oportunidade_id, recomendadorId, recomendadorTipo]
+       AND recomendador_tipo = $3 
+       AND recomendador_id = $4`,
+      [jovem_id, oportunidade_id, recomendadorTipo, recomendadorId]
     );
     
     if (recomendacaoExistente.rows.length > 0) {
-      throw new ForbiddenError('Já existe uma recomendação para este jovem nesta oportunidade');
+      const recomendacao = recomendacaoExistente.rows[0];
+      if (recomendacao.status === 'cancelado') {
+        // Se a recomendação foi cancelada, permitir uma nova
+        console.log('[API-recomendacoes] Recomendação cancelada encontrada, permitindo nova recomendação');
+      } else {
+        throw new ForbiddenError('Você já recomendou este jovem para esta oportunidade');
+      }
     }
     
     // Criar a recomendação
@@ -200,61 +203,108 @@ router.post('/', authMiddleware, checkRole(['chefe_empresa']), validate(recomend
       [jovem_id, oportunidade_id, recomendadorId, recomendadorTipo, justificativa, 'pendente']
     );
     
-    res.status(201).json(result.rows[0]);
+    console.log('[API-recomendacoes] Recomendação criada com sucesso:', result.rows[0].id);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Recomendação realizada com sucesso',
+      recomendacao: result.rows[0]
+    });
   } catch (error) {
     console.error('[API-recomendacoes] Erro ao criar recomendação:', error);
     next(error);
   }
 });
 
-// Atualizar status da recomendação
-router.patch('/:id/status', authMiddleware, checkRole(['instituicao_contratante']), async (req, res, next) => {
+// Atualizar status de uma recomendação
+router.put('/:id/status', authMiddleware, checkRole(['instituicao_contratante']), async (req, res, next) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const client = await db.pool.connect();
+
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    // Verificar se a recomendação existe
-    const recomendacaoExiste = await req.db.query(
-      'SELECT * FROM recomendacoes WHERE id = $1',
-      [id]
-    );
-    
-    if (recomendacaoExiste.rows.length === 0) {
+    // Validação do status de entrada
+    const statusesValidos = ['em_processo', 'contratado', 'rejeitado'];
+    if (!status || !statusesValidos.includes(status)) {
+      return res.status(400).json({ message: 'Status inválido ou não fornecido' });
+    }
+
+    await client.query('BEGIN');
+
+    // 1. Obter a recomendação e os IDs principais
+    const recomendacaoQuery = await client.query('SELECT jovem_id, oportunidade_id FROM recomendacoes WHERE id = $1 FOR UPDATE', [id]);
+    if (recomendacaoQuery.rows.length === 0) {
       throw new NotFoundError('Recomendação não encontrada');
     }
+    const { jovem_id, oportunidade_id } = recomendacaoQuery.rows[0];
     
-    // Verificar se o usuário tem permissão para atualizar o status
-    const oportunidade = await req.db.query(
-      `SELECT o.instituicao_id 
-       FROM oportunidades o 
-       JOIN recomendacoes r ON r.oportunidade_id = o.id 
-       WHERE r.id = $1`,
-      [id]
-    );
-    
-    if (oportunidade.rows.length === 0) {
-      throw new NotFoundError('Oportunidade não encontrada');
-    }
-    
-    const instituicao = await req.db.query(
-      'SELECT id FROM instituicoes_contratantes WHERE usuario_id = $1',
-      [req.user.id]
-    );
-    
-    if (instituicao.rows.length === 0 || instituicao.rows[0].id !== oportunidade.rows[0].instituicao_id) {
-      throw new ForbiddenError('Você não tem permissão para atualizar esta recomendação');
-    }
-    
-    // Atualizar o status
-    const result = await req.db.query(
-      'UPDATE recomendacoes SET status = $1 WHERE id = $2 RETURNING *',
+    // 2. Atualizar o status da recomendação principal
+    const updateResult = await client.query(
+      'UPDATE recomendacoes SET status = $1, atualizado_em = NOW() WHERE id = $2 RETURNING *',
       [status, id]
     );
-    
-    res.json(result.rows[0]);
+    console.log(`[Recomendação] Status da recomendação ${id} atualizado para '${status}'.`);
+
+
+    // 3. Lógica de Contratação
+    if (status === 'contratado') {
+      console.log(`[Contratação] Iniciando processo de contratação para o jovem ${jovem_id} na oportunidade ${oportunidade_id}.`);
+
+      // 3.1. Atualizar o status global do jovem para 'contratado'
+      await client.query(
+        "UPDATE jovens SET status = 'contratado' WHERE id = $1",
+        [jovem_id]
+      );
+      console.log(`[Contratação] Status do jovem ${jovem_id} atualizado para 'contratado'.`);
+
+      // 3.2. Cancelar todas as OUTRAS recomendações ativas para o jovem contratado
+      await client.query(
+        "UPDATE recomendacoes SET status = 'cancelado' WHERE jovem_id = $1 AND status IN ('pendente', 'em_processo')",
+        [jovem_id]
+      );
+      console.log(`[Contratação] Outras recomendações para o jovem ${jovem_id} foram canceladas.`);
+
+      // 3.3. Incrementar vagas preenchidas e verificar se a oportunidade está lotada
+      const oportunidadeResult = await client.query(
+        `UPDATE oportunidades 
+         SET vagas_preenchidas = vagas_preenchidas + 1
+         WHERE id = $1 
+         RETURNING vagas_preenchidas, vagas_disponiveis`,
+        [oportunidade_id]
+      );
+      const { vagas_preenchidas, vagas_disponiveis } = oportunidadeResult.rows[0];
+      console.log(`[Contratação] Vaga ${oportunidade_id} teve vagas preenchidas incrementado para ${vagas_preenchidas}.`);
+
+      // 3.4. Se a oportunidade estiver lotada, rejeitar outras recomendações
+      if (vagas_preenchidas >= vagas_disponiveis) {
+        console.log(`[Contratação] Vaga ${oportunidade_id} está lotada. Rejeitando outras recomendações.`);
+        await client.query(
+          "UPDATE recomendacoes SET status = 'rejeitado' WHERE oportunidade_id = $1 AND status IN ('pendente', 'em_processo')",
+          [oportunidade_id]
+        );
+         // Opcional: Mudar status da oportunidade para 'fechada' ou 'cancelado'
+        await client.query(
+          "UPDATE oportunidades SET status = 'cancelado' WHERE id = $1",
+          [oportunidade_id]
+        );
+        console.log(`[Contratação] Status da oportunidade ${oportunidade_id} atualizado para 'cancelado'.`);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'Status da recomendação atualizado com sucesso',
+      recomendacao: updateResult.rows[0]
+    });
+
   } catch (error) {
-    console.error('[API-recomendacoes] Erro ao atualizar status da recomendação:', error);
+    await client.query('ROLLBACK');
+    console.error('[API-recomendacoes] Erro ao atualizar status:', error);
     next(error);
+  } finally {
+    client.release();
   }
 });
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Checkbox, CheckboxGroup } from '@chakra-ui/react';
+import { FaUserEdit, FaSave, FaTimes, FaKey, FaSpinner } from 'react-icons/fa';
 
 const estados = [
   { id: 1, sigla: 'AC', nome: 'Acre' },
@@ -70,29 +71,29 @@ const Perfil: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [feedback, setFeedback] = useState<{mensagem: string, tipo: 'success' | 'error'} | null>(null);
+  
+  const [originalData, setOriginalData] = useState<any>({});
   const [formData, setFormData] = useState({
-    nome: user?.nome || '',
-    email: user?.email || '',
-    localizacao: user?.perfil?.localizacao || '',
-    // Campos específicos por papel de usuário
-    tipo: user?.perfil?.tipo || '',
-    areas_ensino: user?.perfil?.areas_ensino || [],
-    qtd_alunos: user?.perfil?.qtd_alunos || '',
-    empresa: user?.perfil?.empresa || '',
-    setor: user?.perfil?.setor || '',
-    porte: user?.perfil?.porte || '',
-    areas_atuacao: user?.perfil?.areas_atuacao || [],
-    areas_interesse: user?.perfil?.areas_interesse || [],
-    programas_sociais: user?.perfil?.programas_sociais || []
+    nome: '',
+    email: '',
+    localizacao: '',
+    tipo: '',
+    areas_ensino: [] as string[],
+    qtd_alunos: '',
+    empresa: '',
+    setor: '',
+    porte: '',
+    areas_atuacao: [] as string[],
+    areas_interesse: [] as string[],
+    programas_sociais: [] as string[]
   });
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      const initialData = {
         nome: user.nome || '',
         email: user.email || '',
         localizacao: user.perfil?.localizacao || '',
-        // Campos específicos por papel de usuário
         tipo: user.perfil?.tipo || '',
         areas_ensino: user.perfil?.areas_ensino || [],
         qtd_alunos: user.perfil?.qtd_alunos || '',
@@ -102,23 +103,23 @@ const Perfil: React.FC = () => {
         areas_atuacao: user.perfil?.areas_atuacao || [],
         areas_interesse: user.perfil?.areas_interesse || [],
         programas_sociais: user.perfil?.programas_sociais || []
-      });
+      };
+      setFormData(initialData);
+      setOriginalData(initialData);
     }
   }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleEdit = () => {
+    setEditing(true);
+    setFeedback(null);
   };
 
-  const handleArrayChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    // Converter string em array (cada linha é um item)
-    const arrayValue = value.split('\n').map(item => item.trim()).filter(item => item);
-    setFormData(prev => ({ ...prev, [name]: arrayValue }));
+  const handleCancel = () => {
+    setEditing(false);
+    setFormData(originalData);
   };
-
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -126,6 +127,7 @@ const Perfil: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setFeedback(null);
     
     try {
       await updateUser(formData);
@@ -145,330 +147,196 @@ const Perfil: React.FC = () => {
     }
   };
 
+  const InfoField = ({ label, value }: { label: string, value: string | number | undefined | null }) => (
+    <div>
+      <p className="text-sm font-medium text-cursor-text-secondary">{label}</p>
+      <p className="mt-1 text-cursor-text-primary">{value || 'Não informado'}</p>
+    </div>
+  );
+
+  const InfoTags = ({ label, values }: { label: string, values: string[] | undefined }) => (
+    <div className="md:col-span-2">
+      <p className="text-sm font-medium text-cursor-text-secondary">{label}</p>
+      {values && values.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {values.map((item: string, index: number) => (
+            <span key={index} className="badge badge-primary">
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-1 text-cursor-text-tertiary">Nenhuma área informada</p>
+      )}
+    </div>
+  );
+
   if (!user) {
-    return <div className="text-center py-12">Usuário não encontrado</div>;
+    return (
+      <div className="min-h-screen bg-cursor-background flex items-center justify-center">
+        <FaSpinner className="animate-spin text-cursor-primary h-8 w-8" />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-cursor-background py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-cursor-background py-12 px-4 sm:px-6 lg:px-8 page-transition">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="section-title">Meu Perfil</h1>
-            <p className="section-subtitle">
-              Visualize e edite suas informações
-            </p>
-          </div>
-          <div className="flex space-x-3">
-            {!editing ? (
-              <button
-                onClick={() => setEditing(true)}
-                className="btn-secondary"
-              >
-                Editar Perfil
-              </button>
-            ) : (
-              <button
-                onClick={() => setEditing(false)}
-                className="btn-secondary"
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-            )}
-            <Link
-              to="/alterar-senha"
-              className="btn-primary"
-            >
-              Alterar Senha
-            </Link>
-          </div>
-        </div>
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-cursor-text-primary">Meu Perfil</h1>
+          <p className="text-cursor-text-secondary mt-1">Visualize e edite suas informações de perfil.</p>
+        </header>
 
-        <div className="card p-6">
-          {feedback && (
-            <div className={`p-4 mb-4 rounded-lg ${feedback.tipo === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {feedback.mensagem}
-            </div>
-          )}
-          {editing ? (
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Informações básicas */}
-              <div>
-                <h3 className="text-lg font-semibold text-cursor-text-primary mb-6">
-                  Informações Básicas
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                      Nome
-                    </label>
-                    <input
-                      type="text"
-                      name="nome"
-                      value={formData.nome}
-                      onChange={handleChange}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      disabled
-                      className="input-field bg-cursor-background-card opacity-75"
-                    />
-                    <p className="text-xs text-cursor-text-tertiary mt-1">
-                      O email não pode ser alterado
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                      Localização
-                    </label>
-                    <select
-                      name="localizacao"
-                      value={formData.localizacao}
-                      onChange={handleSelectChange}
-                      className="input-field select-field"
-                      required
-                    >
-                      <option value="">Selecione um estado</option>
-                      {estados.map(estado => (
-                        <option key={estado.id} value={estado.sigla}>
-                          {estado.nome} ({estado.sigla})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+        {feedback && (
+          <div className={`p-4 mb-6 rounded-lg ${feedback.tipo === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+            {feedback.mensagem}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-8">
+            {/* INFORMAÇÕES BÁSICAS */}
+            <div className="card p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-cursor-text-primary">Informações Básicas</h3>
+                {!editing && (
+                  <button type="button" onClick={handleEdit} className="btn-icon">
+                    <FaUserEdit />
+                    <span>Editar</span>
+                  </button>
+                )}
               </div>
-              
-              {/* Campos específicos baseados no papel */}
-              <div>
-                <h3 className="text-lg font-semibold text-cursor-text-primary mb-6">
-                  Informações Específicas
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {user.papel === 'instituicao_ensino' && (
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {editing ? (
+                  <>
+                    <div>
+                      <label className="label-form">Nome</label>
+                      <input type="text" name="nome" value={formData.nome} onChange={handleChange} className="input-field" required />
+                    </div>
+                    <div>
+                      <label className="label-form">Email</label>
+                      <input type="email" value={formData.email} disabled className="input-field disabled" />
+                    </div>
+                    <div>
+                      <label className="label-form">Localização</label>
+                      <select name="localizacao" value={formData.localizacao} onChange={handleChange} className="input-field" required>
+                        <option value="">Selecione um estado</option>
+                        {estados.map(estado => (
+                          <option key={estado.id} value={estado.sigla}>{estado.nome} ({estado.sigla})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <InfoField label="Nome" value={formData.nome} />
+                    <InfoField label="Email" value={formData.email} />
+                    <InfoField label="Localização" value={formData.localizacao} />
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* INFORMAÇÕES ESPECÍFICAS */}
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-cursor-text-primary mb-6">Informações Específicas</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {user.papel === 'instituicao_ensino' && (
+                  editing ? (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                          Tipo de Instituição
-                        </label>
-                        <select
-                          name="tipo"
-                          value={formData.tipo}
-                          onChange={handleSelectChange}
-                          className="input-field select-field"
-                          required
-                        >
+                        <label className="label-form">Tipo de Instituição</label>
+                        <select name="tipo" value={formData.tipo} onChange={handleChange} className="input-field" required>
                           <option value="">Selecione o tipo</option>
-                          {tiposInstituicaoEnsinoPreSet.map(tipo => (
-                            <option key={tipo} value={tipo}>{tipo}</option>
-                          ))}
+                          {tiposInstituicaoEnsinoPreSet.map(tipo => (<option key={tipo} value={tipo}>{tipo}</option>))}
                         </select>
                       </div>
-                      
                       <div>
-                        <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                          Número de Alunos
-                        </label>
-                        <input
-                          type="number"
-                          name="qtd_alunos"
-                          value={formData.qtd_alunos}
-                          onChange={handleChange}
-                          className="input-field"
-                          placeholder="Ex: 1000"
-                        />
+                        <label className="label-form">Número de Alunos</label>
+                        <input type="number" name="qtd_alunos" value={formData.qtd_alunos} onChange={handleChange} className="input-field" placeholder="Ex: 1000" />
                       </div>
-                      
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                          Áreas de Ensino
-                        </label>
-                        <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#333]">
-                          <CheckboxGroup
-                            colorScheme="blue"
-                            value={formData.areas_ensino}
-                            onChange={(val) => setFormData(prev => ({ ...prev, areas_ensino: val as string[] }))}
-                          >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="md:col-span-2">
+                        <label className="label-form">Áreas de Ensino</label>
+                        <div className="p-3 rounded-lg bg-cursor-background-light border border-cursor-border">
+                          <CheckboxGroup colorScheme="indigo" value={formData.areas_ensino} onChange={(val) => setFormData(prev => ({ ...prev, areas_ensino: val as string[] }))}>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                               {opcoesEnsino.map((opcao) => (
-                                <Checkbox
-                                  key={opcao}
-                                  value={opcao}
-                                  className="text-white"
-                                >
-                                  {opcao}
-                                </Checkbox>
+                                <Checkbox key={opcao} value={opcao} className="text-cursor-text-secondary">{opcao}</Checkbox>
                               ))}
                             </div>
                           </CheckboxGroup>
                         </div>
                       </div>
                     </>
-                  )}
-                  
-                  {user.papel === 'chefe_empresa' && (
+                  ) : (
+                    <>
+                      <InfoField label="Tipo de Instituição" value={formData.tipo} />
+                      <InfoField label="Número de Alunos" value={formData.qtd_alunos} />
+                      <InfoTags label="Áreas de Ensino" values={formData.areas_ensino} />
+                    </>
+                  )
+                )}
+
+                {user.papel === 'chefe_empresa' && (
+                  editing ? (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                          Nome da Empresa
-                        </label>
-                        <input
-                          type="text"
-                          name="empresa"
-                          value={formData.empresa}
-                          onChange={handleChange}
-                          className="input-field"
-                          placeholder="Ex: TechCorp"
-                        />
+                        <label className="label-form">Nome da Empresa</label>
+                        <input type="text" name="empresa" value={formData.empresa} onChange={handleChange} className="input-field" placeholder="Ex: TechCorp" />
                       </div>
-                      
                       <div>
-                        <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                          Setor
-                        </label>
-                        <input
-                          type="text"
-                          name="setor"
-                          value={formData.setor}
-                          onChange={handleChange}
-                          className="input-field"
-                          placeholder="Ex: Tecnologia"
-                        />
+                        <label className="label-form">Setor</label>
+                        <input type="text" name="setor" value={formData.setor} onChange={handleChange} className="input-field" placeholder="Ex: Tecnologia" />
                       </div>
-                      
                       <div>
-                        <label className="block text-sm font-medium text-cursor-text-secondary mb-2">
-                          Porte da Empresa
-                        </label>
-                        <input
-                          type="text"
-                          name="porte"
-                          value={formData.porte}
-                          onChange={handleChange}
-                          className="input-field"
-                          placeholder="Ex: Médio"
-                        />
+                        <label className="label-form">Porte da Empresa</label>
+                        <input type="text" name="porte" value={formData.porte} onChange={handleChange} className="input-field" placeholder="Ex: Médio" />
                       </div>
                     </>
-                  )}
-                </div>
+                  ) : (
+                    <>
+                      <InfoField label="Nome da Empresa" value={formData.empresa} />
+                      <InfoField label="Setor" value={formData.setor} />
+                      <InfoField label="Porte da Empresa" value={formData.porte} />
+                    </>
+                  )
+                )}
               </div>
+            </div>
 
-              <div className="flex justify-end space-x-3 pt-6 border-t border-cursor-border">
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="btn-secondary"
-                  disabled={loading}
-                >
-                  Cancelar
+            {editing && (
+              <div className="flex justify-end space-x-3 pt-4">
+                <button type="button" onClick={handleCancel} className="btn-secondary" disabled={loading}>
+                  <FaTimes className="mr-2" /> Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={loading}
-                >
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? <FaSpinner className="animate-spin mr-2" /> : <FaSave className="mr-2" />}
                   {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
-            </form>
-          ) : (
-            <div className="space-y-8">
-              {/* Visualização das informações básicas */}
-              <div>
-                <h3 className="text-lg font-semibold text-cursor-text-primary mb-6">
-                  Informações Básicas
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-sm font-medium text-cursor-text-secondary">Nome</p>
-                    <p className="mt-1 text-cursor-text-primary">{formData.nome}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium text-cursor-text-secondary">Email</p>
-                    <p className="mt-1 text-cursor-text-primary">{formData.email}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium text-cursor-text-secondary">Localização</p>
-                    <p className="mt-1 text-cursor-text-primary">{formData.localizacao || 'Não informado'}</p>
-                  </div>
+            )}
+          </div>
+        </form>
+
+        {/* ALTERAR SENHA */}
+        {!editing && (
+          <div className="mt-12">
+            <div className="card p-6 border-red-500/20">
+              <div className="flex flex-col md:flex-row justify-between md:items-center">
+                <div>
+                  <h4 className="font-medium text-cursor-text-primary">Alterar Senha</h4>
+                  <p className="text-cursor-text-secondary text-sm mt-1">
+                    Após alterar sua senha, você será desconectado de todas as sessões.
+                  </p>
                 </div>
-              </div>
-              
-              {/* Visualização das informações específicas */}
-              <div>
-                <h3 className="text-lg font-semibold text-cursor-text-primary mb-6">
-                  Informações Específicas
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {user.papel === 'instituicao_ensino' && (
-                    <>
-                      <div>
-                        <p className="text-sm font-medium text-cursor-text-secondary">Tipo de Instituição</p>
-                        <p className="mt-1 text-cursor-text-primary">{formData.tipo || 'Não informado'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-cursor-text-secondary">Número de Alunos</p>
-                        <p className="mt-1 text-cursor-text-primary">{formData.qtd_alunos || 'Não informado'}</p>
-                      </div>
-                      
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-cursor-text-secondary">Áreas de Ensino</p>
-                        {formData.areas_ensino && formData.areas_ensino.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {formData.areas_ensino.map((area: string, index: number) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-cursor-background-light text-cursor-text-primary border border-cursor-border"
-                              >
-                                {area}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-1 text-cursor-text-tertiary">Nenhuma área informada</p>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  
-                  {user.papel === 'chefe_empresa' && (
-                    <>
-                      <div>
-                        <p className="text-sm font-medium text-cursor-text-secondary">Nome da Empresa</p>
-                        <p className="mt-1 text-cursor-text-primary">{formData.empresa || 'Não informado'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-cursor-text-secondary">Setor</p>
-                        <p className="mt-1 text-cursor-text-primary">{formData.setor || 'Não informado'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-cursor-text-secondary">Porte da Empresa</p>
-                        <p className="mt-1 text-cursor-text-primary">{formData.porte || 'Não informado'}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <Link to="/alterar-senha" className="btn-danger mt-4 md:mt-0 flex-shrink-0">
+                  <FaKey className="mr-2" /> Alterar Senha
+                </Link>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

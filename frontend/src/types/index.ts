@@ -64,7 +64,7 @@ export interface Jovem {
   habilidades: string[];
   interesses: string[];
   planos_futuros: string;
-  status: 'Ativo' | 'Inativo' | 'Pendente';
+  status: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';
   empresas?: {
     id: number;
     nome: string;
@@ -83,7 +83,9 @@ export interface Jovem {
   historico?: HistoricoDesenvolvimento[];
   badges?: JovemBadge[];
   media_geral?: number;
+  pontuacao_desenvolvimento?: number;
   total_avaliacoes?: number;
+  recomendacoes?: Recomendacao[];
 }
 
 export interface JovemInput {
@@ -109,7 +111,7 @@ export interface Oportunidade {
   beneficios: string[] | string;
   horario: string;
   local: string;
-  status: 'Aberta' | 'Fechada' | 'Encerrada';
+  status: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';
   total_recomendacoes?: number;
   data_inicio?: string;
   data_fim?: string;
@@ -132,6 +134,7 @@ export interface OportunidadeInput {
   beneficios?: string[];
   data_inicio?: string;
   data_fim?: string;
+  status?: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';
 }
 
 // Recomendação
@@ -142,12 +145,13 @@ export interface Recomendacao {
   recomendador_tipo: string;
   recomendador_id: number;
   justificativa: string;
-  status: string;
+  status: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado' | 'em_processo' | 'contratado';
   jovem_nome?: string;
   jovem_email?: string;
   jovem_formacao?: string;
   jovem_idade?: number;
   recomendador_nome?: string;
+  oportunidade_titulo?: string;
   criado_em: string;
   atualizado_em: string;
 }

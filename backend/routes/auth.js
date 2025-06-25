@@ -33,14 +33,26 @@ export const authMiddleware = (req, res, next) => {
 // Middleware para verificar o papel do usuário
 export const checkRole = (roles) => {
   return (req, res, next) => {
+    console.log('[Auth] Verificando papel do usuário:', {
+      userRole: req.user?.papel,
+      expectedRoles: roles,
+      userId: req.user?.id
+    });
+    
     if (!req.user) {
+      console.log('[Auth] Usuário não autenticado');
       return next(new AuthenticationError('Usuário não autenticado'));
     }
     
     if (!roles.includes(req.user.papel)) {
+      console.log('[Auth] Acesso negado - papel não autorizado:', {
+        userRole: req.user.papel,
+        expectedRoles: roles
+      });
       return next(new AuthenticationError('Acesso não autorizado para este papel'));
     }
     
+    console.log('[Auth] Acesso autorizado para papel:', req.user.papel);
     next();
   };
 };

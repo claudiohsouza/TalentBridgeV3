@@ -250,7 +250,8 @@ export const oportunidadeSchema = Joi.object({
   data_inicio: Joi.date().iso().allow(null).optional(),
   data_fim: Joi.date().iso().min(Joi.ref('data_inicio')).allow(null).optional().messages({
     'date.min': 'Data fim deve ser posterior à data início'
-  })
+  }),
+  status: Joi.string().valid('pendente', 'aprovado', 'rejeitado', 'cancelado').optional()
 });
 
 // Validação de Recomendação
