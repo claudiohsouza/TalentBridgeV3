@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/Navbar';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UserRole } from './types';
+import { Link } from 'react-router-dom';
 
 // Páginas
 import Login from './pages/login';
@@ -29,16 +30,51 @@ type ProtectedRouteProps = {
 const ProtectedRoute = ({ children, allowedRole }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
 
+  // Só mostra loading se realmente estiver carregando
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cursor-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cursor-primary mx-auto mb-4"></div>
+          <p className="text-cursor-text-secondary">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!user) {
-    return <Navigate to="/login" />;
+  // Se não há usuário E não há token no localStorage, redireciona para login
+  const token = localStorage.getItem('token');
+  if (!user && !token) {
+    console.log('[ProtectedRoute] Usuário não autenticado e sem token, redirecionando para login');
+    return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && user.papel !== allowedRole) {
-    return <Navigate to="/" />;
+  // Se não há usuário MAS há token, tenta usar dados do localStorage temporariamente
+  if (!user && token) {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        // Verifica se o papel é adequado
+        if (allowedRole && parsedUser.papel !== allowedRole) {
+          console.log('[ProtectedRoute] Usuário sem permissão:', parsedUser.papel, 'vs', allowedRole);
+          return <Navigate to="/" replace />;
+        }
+        // Se chegou até aqui, permite o acesso
+        console.log('[ProtectedRoute] Usando dados salvos do usuário:', parsedUser.email);
+        return children;
+      } catch (e) {
+        console.error('[ProtectedRoute] Erro ao parsear usuário salvo:', e);
+        return <Navigate to="/login" replace />;
+      }
+    }
+    return <Navigate to="/login" replace />;
+  }
+
+  // Se há usuário mas não tem permissão para o papel específico
+  if (allowedRole && user && user.papel !== allowedRole) {
+    console.log('[ProtectedRoute] Usuário sem permissão para acessar esta rota:', user.papel, 'vs', allowedRole);
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -117,8 +153,18 @@ function App() {
             element={<ProtectedRoute allowedRole="instituicao_contratante"><DashboardInstituicaoContratante /></ProtectedRoute>} 
           />
 
-          {/* Rota 404 - Redireciona para a página inicial */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Rota 404 - Apenas para rotas que realmente não existem */}
+          <Route path="*" element={
+            <div className="min-h-screen flex items-center justify-center bg-cursor-background">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold text-cursor-text-primary mb-4">404</h1>
+                <p className="text-cursor-text-secondary mb-6">Página não encontrada</p>
+                <Link to="/" className="btn-primary">
+                  Voltar para Home
+                </Link>
+              </div>
+            </div>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

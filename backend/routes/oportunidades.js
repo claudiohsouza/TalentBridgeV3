@@ -32,6 +32,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
     const params = [];
     
     // FILTRO POR EMPRESA: Se o usuário for chefe de empresa, mostrar apenas suas vagas.
+    // Instituições contratantes podem ver todas as oportunidades
     if (req.user.papel === 'chefe_empresa') {
       const empresaResult = await pool.query(
         'SELECT id FROM chefes_empresas WHERE usuario_id = $1',
@@ -46,6 +47,14 @@ router.get('/', authMiddleware, async (req, res, next) => {
         // Se o chefe de empresa não tiver um perfil de empresa, retorna um array vazio.
         return res.json([]);
       }
+    }
+    
+    // Instituições contratantes e instituições de ensino podem ver todas as oportunidades
+    
+    // Para instituições contratantes, mostrar apenas oportunidades aprovadas por padrão
+    if (req.user.papel === 'instituicao_contratante' && !status) {
+      params.push('aprovado');
+      whereConditions.push(`o.status = $${params.length}`);
     }
     
     if (status) {

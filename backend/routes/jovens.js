@@ -38,7 +38,7 @@ router.get('/recomendados', authMiddleware, checkRole(['instituicao_contratante'
           j.planos_futuros,
           j.status,
           COALESCE(
-            json_agg(DISTINCT
+            jsonb_agg(DISTINCT
               jsonb_build_object(
                 'id', r.id,
                 'status', r.status,

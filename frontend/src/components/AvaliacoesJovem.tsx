@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { PermissionGuard } from './PermissionGuard';
+import AvaliacaoForm from './AvaliacaoForm';
+import HistoricoForm from './HistoricoForm';
 import {
   Avaliacao,
+  AvaliacaoInput,
   CategoriaAvaliacao,
   HistoricoDesenvolvimento,
+  HistoricoDesenvolvimentoInput,
   JovemBadge
 } from '../types';
 
@@ -14,8 +18,8 @@ interface AvaliacoesJovemProps {
   historico: HistoricoDesenvolvimento[];
   badges: JovemBadge[];
   mediaGeral: number;
-  onAddAvaliacao: (avaliacao: Avaliacao) => void;
-  onAddHistorico: (historico: HistoricoDesenvolvimento) => void;
+  onAddAvaliacao: (avaliacaoInput: AvaliacaoInput) => Promise<void>;
+  onAddHistorico: (historicoInput: HistoricoDesenvolvimentoInput) => Promise<void>;
 }
 
 export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
@@ -30,6 +34,17 @@ export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'avaliacoes' | 'historico' | 'badges'>('avaliacoes');
   const [showAvaliacaoForm, setShowAvaliacaoForm] = useState(false);
+  const [showHistoricoForm, setShowHistoricoForm] = useState(false);
+
+  const handleAddAvaliacao = async (avaliacaoInput: AvaliacaoInput) => {
+    await onAddAvaliacao(avaliacaoInput);
+    setShowAvaliacaoForm(false);
+  };
+
+  const handleAddHistorico = async (historicoInput: HistoricoDesenvolvimentoInput) => {
+    await onAddHistorico(historicoInput);
+    setShowHistoricoForm(false);
+  };
 
   const renderAvaliacoes = () => (
     <div className="space-y-4">
@@ -37,7 +52,7 @@ export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
         <h3 className="text-xl font-semibold">
           Avaliações
           <span className="ml-2 text-sm font-normal text-cursor-text-secondary">
-            Média geral: {mediaGeral.toFixed(1)}
+            Média geral: {(mediaGeral ?? 0).toFixed(1)}
           </span>
         </h3>
         {user?.papel === 'instituicao_ensino' && (
@@ -50,15 +65,20 @@ export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
         )}
       </div>
 
-      <div className="grid gap-4">
-        {avaliacoes.map(avaliacao => (
+      <div className="grid gap-4">      {avaliacoes && avaliacoes.length > 0 ? (
+        avaliacoes.map(avaliacao => (
           <div key={avaliacao.id} className="card p-4">
             <div className="flex justify-between items-start">
               <div>
-                <h4 className="font-medium">{avaliacao.categoria?.nome}</h4>
+                <h4 className="font-medium">{avaliacao.categoria_nome || avaliacao.categoria?.nome || 'Categoria não informada'}</h4>
                 <p className="text-sm text-cursor-text-secondary">
-                  Nota: {avaliacao.nota.toFixed(1)}/10
+                  Nota: {(avaliacao.nota ?? 0).toFixed(1)}/10
                 </p>
+                {avaliacao.avaliador_nome && (
+                  <p className="text-xs text-cursor-text-tertiary">
+                    Avaliado por: {avaliacao.avaliador_nome}
+                  </p>
+                )}
               </div>
               <span className="text-sm text-cursor-text-tertiary">
                 {new Date(avaliacao.criado_em).toLocaleDateString()}
@@ -89,7 +109,12 @@ export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
               </div>
             )}
           </div>
-        ))}
+        ))
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-cursor-text-secondary">Nenhuma avaliação encontrada para este jovem.</p>
+        </div>
+      )}
       </div>
     </div>
   );
@@ -100,7 +125,7 @@ export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
         <h3 className="text-xl font-semibold">Histórico de Desenvolvimento</h3>
         {user?.papel === 'instituicao_ensino' && (
           <button
-            onClick={() => {/* Implementar formulário de histórico */}}
+            onClick={() => setShowHistoricoForm(true)}
             className="btn-primary"
           >
             Adicionar Registro
@@ -243,6 +268,23 @@ export const AvaliacoesJovem: React.FC<AvaliacoesJovemProps> = ({
         {activeTab === 'historico' && renderHistorico()}
         {activeTab === 'badges' && renderBadges()}
       </div>
+
+      {/* Modais */}
+      {showAvaliacaoForm && (
+        <AvaliacaoForm
+          jovemId={jovemId}
+          onSubmit={handleAddAvaliacao}
+          onCancel={() => setShowAvaliacaoForm(false)}
+        />
+      )}
+
+      {showHistoricoForm && (
+        <HistoricoForm
+          jovemId={jovemId}
+          onSubmit={handleAddHistorico}
+          onCancel={() => setShowHistoricoForm(false)}
+        />
+      )}
     </div>
   );
 };

@@ -58,23 +58,42 @@ const NovoJovem: React.FC = () => {
     const carregarOpcoes = async () => {
       try {
         setLoadingOpcoes(true);
+        console.log('[NovoJovem] Carregando opções do sistema...');
+        
         const [formacoes, habilidades, interesses] = await Promise.all([
           opcoesService.obterOpcoesPorCategoria('formacoes'),
           opcoesService.obterOpcoesPorCategoria('habilidades'),
           opcoesService.obterOpcoesPorCategoria('areas_interesse')
         ]);
 
+        console.log('[NovoJovem] Dados recebidos:', { formacoes, habilidades, interesses });
+
+        // Verificar se os dados são arrays e extrair valores
+        const formacoesArray = Array.isArray(formacoes) ? formacoes : [];
+        const habilidadesArray = Array.isArray(habilidades) ? habilidades : [];
+        const interessesArray = Array.isArray(interesses) ? interesses : [];
+
         setOpcoes({
-          formacoes: formacoes.map((f: any) => f.valor),
+          formacoes: formacoesArray.map((f: any) => f.valor || f),
           cursos: [], // Será preenchido baseado na formação
-          habilidades: habilidades.map((h: any) => h.valor),
-          interesses: interesses.map((i: any) => i.valor)
+          habilidades: habilidadesArray.map((h: any) => h.valor || h),
+          interesses: interessesArray.map((i: any) => i.valor || i)
         });
+
+        console.log('[NovoJovem] Opções configuradas com sucesso');
       } catch (error) {
-        console.error('Erro ao carregar opções:', error);
+        console.error('[NovoJovem] Erro ao carregar opções:', error);
         setFeedback({
           mensagem: 'Erro ao carregar opções do sistema',
           tipo: 'error'
+        });
+        
+        // Definir opções padrão em caso de erro
+        setOpcoes({
+          formacoes: [],
+          cursos: [],
+          habilidades: [],
+          interesses: []
         });
       } finally {
         setLoadingOpcoes(false);
@@ -90,13 +109,24 @@ const NovoJovem: React.FC = () => {
       if (!formData.formacao) return;
 
       try {
+        console.log('[NovoJovem] Carregando cursos para formação:', formData.formacao);
         const cursos = await opcoesService.obterOpcoesPorCategoria('area_ensino');
+        
+        // Verificar se os dados são um array
+        const cursosArray = Array.isArray(cursos) ? cursos : [];
+        
         setOpcoes(prev => ({
           ...prev,
-          cursos: cursos.map((c: any) => c.valor)
+          cursos: cursosArray.map((c: any) => c.valor || c)
         }));
+        
+        console.log('[NovoJovem] Cursos carregados:', cursosArray.length);
       } catch (error) {
-        console.error('Erro ao carregar cursos:', error);
+        console.error('[NovoJovem] Erro ao carregar cursos:', error);
+        setOpcoes(prev => ({
+          ...prev,
+          cursos: []
+        }));
       }
     };
 

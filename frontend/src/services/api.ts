@@ -98,16 +98,15 @@ api.interceptors.response.use(
     
     // Tratar erros de autenticação (401)
     if (error.response?.status === 401) {
-      console.log('[API] Token expirado ou inválido, redirecionando para login');
+      console.log('[API] Token expirado ou inválido');
       localStorage.removeItem('token');
       localStorage.removeItem('papel');
       localStorage.removeItem('email');
+      localStorage.removeItem('user');
       
-      // Apenas redirecionar se não estiver já na página de login ou registro
-      const path = window.location.pathname;
-      if (path !== '/login' && path !== '/cadastro' && path !== '/') {
-        window.location.href = '/login';
-      }
+      // NÃO fazer redirecionamento automático aqui
+      // Deixar o AuthContext e as rotas protegidas cuidarem disso
+      console.log('[API] Dados de autenticação removidos, deixando o React Router cuidar do redirecionamento');
     }
     
     // Tratar erros 404
@@ -395,17 +394,51 @@ export const oportunidadeService = {
 export const opcoesService = {
   // Buscar todas as opções disponíveis
   listarOpcoes: async (): Promise<any> => {
-    const response = await api.get('/api/opcoes');
-    return response.data;
+    try {
+      const response = await api.get('/api/opcoes');
+      console.log('[Opcoes Service] Resposta completa:', response.data);
+      
+      // Extrair dados da estrutura de resposta
+      if (response.data && response.data.data) {
+        return response.data.data;
+      } else if (response.data && typeof response.data === 'object') {
+        return response.data;
+      }
+      
+      return {};
+    } catch (error) {
+      console.error('[Opcoes Service] Erro ao buscar opções:', error);
+      throw error;
+    }
   },
+  
   obterTodasOpcoes: async () => {
     const opcoes = await opcoesService.listarOpcoes();
     return opcoes;
   },
+  
   // Buscar opções específicas por categoria
-  obterOpcoesPorCategoria: async (categoria: string): Promise<any> => {
-    const response = await api.get(`/api/opcoes/${categoria}`);
-    return response.data;
+  obterOpcoesPorCategoria: async (categoria: string): Promise<any[]> => {
+    try {
+      const response = await api.get(`/api/opcoes/${categoria}`);
+      console.log(`[Opcoes Service] Resposta para categoria ${categoria}:`, response.data);
+      
+      // Extrair dados da estrutura de resposta
+      if (response.data && response.data.data) {
+        // Se a resposta tem a estrutura { status, message, data }
+        const data = response.data.data;
+        return Array.isArray(data) ? data : [];
+      } else if (response.data && Array.isArray(response.data)) {
+        // Se a resposta é diretamente um array
+        return response.data;
+      } else {
+        console.warn(`[Opcoes Service] Estrutura de resposta inesperada para ${categoria}:`, response.data);
+        return [];
+      }
+    } catch (error) {
+      console.error(`[Opcoes Service] Erro ao buscar opções da categoria ${categoria}:`, error);
+      return [];
+    }
   }
 };
 

@@ -64,7 +64,7 @@ export interface Jovem {
   habilidades: string[];
   interesses: string[];
   planos_futuros: string;
-  status: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';
+  status: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado' | 'ativo' | 'Ativo' | 'Pendente' | 'Aprovado';
   empresas?: {
     id: number;
     nome: string;
@@ -207,6 +207,11 @@ export interface Avaliacao {
   criado_em: string;
   atualizado_em: string;
   categoria?: CategoriaAvaliacao;
+  // Campos adicionais que vêm da API
+  categoria_nome?: string;
+  categoria_descricao?: string;
+  categoria_peso?: number;
+  avaliador_nome?: string;
 }
 
 export interface AvaliacaoInput {

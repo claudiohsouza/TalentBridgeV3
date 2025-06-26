@@ -15,7 +15,7 @@ const pool = new Pool({
     rejectUnauthorized: false,
     require: true
   }
-});
+})
 
 // Teste de conexão
 async function testarConexao() {

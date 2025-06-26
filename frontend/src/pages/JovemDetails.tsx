@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Jovem, 
   Avaliacao, 
+  AvaliacaoInput,
   HistoricoDesenvolvimento,
   HistoricoDesenvolvimentoInput
 } from '../types';
@@ -246,13 +247,36 @@ const JovemDetails: React.FC = () => {
 
         // Buscar avaliações
         try {
+          console.log('[JovemDetails] Iniciando busca de avaliações para jovem:', id);
           const avaliacoesData = await avaliacoesService.obterAvaliacoesJovem(Number(id));
-          setAvaliacoes(avaliacoesData.avaliacoes);
-          setMediaGeral(avaliacoesData.media_geral);
-          setTotalAvaliacoes(avaliacoesData.total_avaliacoes);
-          console.log('[JovemDetails] Avaliações carregadas com sucesso');
+          console.log('[JovemDetails] Dados de avaliações recebidos:', avaliacoesData);
+          
+          if (avaliacoesData && typeof avaliacoesData === 'object') {
+            setAvaliacoes(avaliacoesData.avaliacoes || []);
+            setMediaGeral(avaliacoesData.media_geral || 0);
+            setTotalAvaliacoes(avaliacoesData.total_avaliacoes || 0);
+            console.log('[JovemDetails] Avaliações configuradas:', {
+              quantidade: avaliacoesData.avaliacoes?.length || 0,
+              media: avaliacoesData.media_geral || 0,
+              total: avaliacoesData.total_avaliacoes || 0
+            });
+          } else {
+            console.warn('[JovemDetails] Estrutura de dados de avaliações inesperada:', avaliacoesData);
+            setAvaliacoes([]);
+            setMediaGeral(0);
+            setTotalAvaliacoes(0);
+          }
         } catch (error: any) {
           console.error('[JovemDetails] Erro ao carregar avaliações:', error);
+          console.error('[JovemDetails] Detalhes do erro:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
+          // Definir valores padrão em caso de erro
+          setAvaliacoes([]);
+          setMediaGeral(0);
+          setTotalAvaliacoes(0);
         }
 
         // Buscar histórico
@@ -274,9 +298,9 @@ const JovemDetails: React.FC = () => {
     fetchData();
   }, [id]);
 
-  const handleAddAvaliacao = async (avaliacao: Avaliacao) => {
+  const handleAddAvaliacao = async (avaliacaoInput: AvaliacaoInput) => {
     try {
-      const novaAvaliacao = await avaliacoesService.criarAvaliacao(Number(id), avaliacao);
+      const novaAvaliacao = await avaliacoesService.criarAvaliacao(Number(id), avaliacaoInput);
       setAvaliacoes(prev => [novaAvaliacao, ...prev]);
       
       // Atualizar média e total
@@ -400,22 +424,7 @@ const JovemDetails: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-4">
-            {user?.papel === 'instituicao_ensino' && (
-              <>
-                <button
-                  onClick={() => navigate(`/avaliacoes/novo/${id}`)}
-                  className="btn-primary"
-                >
-                  Nova Avaliação
-                </button>
-                <button
-                  onClick={() => navigate(`/historico/novo/${id}`)}
-                  className="btn-secondary"
-                >
-                  Adicionar Histórico
-                </button>
-              </>
-            )}
+            {/* Botões movidos para dentro do componente AvaliacoesJovem */}
             {user?.papel === 'instituicao_contratante' && (
               <button
                 onClick={() => setShowContactModal(true)}
@@ -435,7 +444,7 @@ const JovemDetails: React.FC = () => {
           <div className="card p-6">
             <h3 className="text-lg font-semibold text-cursor-text-primary mb-2">Desempenho</h3>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold text-cursor-text-primary">{mediaGeral.toFixed(1)}</span>
+              <span className="text-3xl font-bold text-cursor-text-primary">{(mediaGeral ?? 0).toFixed(1)}</span>
               <span className="text-cursor-text-secondary mb-1">/10</span>
             </div>
             <p className="text-sm text-cursor-text-secondary mt-2">

@@ -34,9 +34,25 @@ const DashboardInstituicaoEnsino: React.FC = () => {
 
   // Estatísticas
   const totalJovens = jovens.length;
-  const jovensAtivos = jovens.filter(j => j.status === 'aprovado').length;
-  const jovensPendentes = jovens.filter(j => j.status === 'pendente').length;
+  
+  // Debug: Log dos status dos jovens
+  console.log('[Dashboard] Jovens carregados:', jovens.length);
+  console.log('[Dashboard] Status dos jovens:', jovens.map(j => ({ nome: j.nome, status: j.status })));
+  
+  // Corrigido: usar toLowerCase() para tornar case-insensitive
+  const jovensAtivos = jovens.filter(j => {
+    const status = j.status?.toLowerCase();
+    const isAtivo = status === 'aprovado' || status === 'ativo';
+    console.log(`[Dashboard] ${j.nome}: status='${j.status}', normalizado='${status}', isAtivo=${isAtivo}`);
+    return isAtivo;
+  }).length;
+  const jovensPendentes = jovens.filter(j => {
+    const status = j.status?.toLowerCase();
+    return status === 'pendente';
+  }).length;
   const oportunidadesAbertas = oportunidades.filter(op => op.status === 'aprovado').length;
+  
+  console.log('[Dashboard] Estatísticas:', { totalJovens, jovensAtivos, jovensPendentes, oportunidadesAbertas });
 
   return (
     <div className="min-h-screen bg-cursor-background py-8 px-4 sm:px-6 lg:px-8 page-transition">
@@ -187,11 +203,11 @@ const DashboardInstituicaoEnsino: React.FC = () => {
                         </div>
                         <div className="ml-4">
                           <span className={`text-xs px-2 py-1 rounded-full capitalize ${
-                            jovem.status === 'aprovado' ? 'bg-green-100 text-green-800' :
-                            jovem.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                            jovem.status?.toLowerCase() === 'aprovado' || jovem.status?.toLowerCase() === 'ativo' ? 'bg-green-100 text-green-800' :
+                            jovem.status?.toLowerCase() === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {jovem.status}
+                            {jovem.status?.toLowerCase() === 'ativo' ? 'Ativo' : jovem.status}
                           </span>
                         </div>
                       </div>

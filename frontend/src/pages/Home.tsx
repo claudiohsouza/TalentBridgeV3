@@ -189,7 +189,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center card p-6 hover:border-cursor-primary transition-all duration-300 card-transition stagger-item">
               <div className="h-16 w-16 rounded-full bg-cursor-primary/20 flex items-center justify-center mb-4 mx-auto">
                 <svg className="w-8 h-8 text-cursor-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,18 +224,6 @@ export default function Home() {
                 {(stats?.empresas || 0).toLocaleString()}+
               </div>
               <div className="text-cursor-text-secondary">Empresas Parceiras</div>
-            </div>
-            
-            <div className="text-center card p-6 hover:border-cursor-primary transition-all duration-300 card-transition stagger-item">
-              <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4 mx-auto">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="text-3xl md:text-4xl font-bold text-cursor-text-primary mb-2">
-                {(stats?.contratacoes || 0).toLocaleString()}+
-              </div>
-              <div className="text-cursor-text-secondary">Contratações Realizadas</div>
             </div>
           </div>
         </div>

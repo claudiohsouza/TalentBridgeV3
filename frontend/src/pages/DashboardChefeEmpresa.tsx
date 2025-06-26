@@ -67,7 +67,7 @@ const DashboardChefeEmpresa: React.FC = () => {
         </div>
 
         {/* Cards Informativos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="card p-6 hover:border-cursor-primary transition-colors duration-300 card-transition stagger-item">
             <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Jovens Disponíveis</h2>
             <p className="text-3xl font-bold text-cursor-primary">{loading ? '-' : totalJovens}</p>
@@ -101,14 +101,6 @@ const DashboardChefeEmpresa: React.FC = () => {
             <p className="text-3xl font-bold text-cursor-warning">{loading ? '-' : totalRecomendacoes}</p>
             <p className="text-sm text-cursor-text-secondary mt-1">
               Em vagas abertas
-            </p>
-          </div>
-
-          <div className="card p-6 hover:border-cursor-primary transition-colors duration-300 card-transition stagger-item">
-            <h2 className="text-lg font-semibold text-cursor-text-primary mb-2">Taxa de Conversão</h2>
-            <p className="text-3xl font-bold text-cursor-secondary">{loading ? '-' : `${taxaAproveitamento}%`}</p>
-            <p className="text-sm text-cursor-text-secondary mt-1">
-              Jovens contratados
             </p>
           </div>
         </div>
@@ -228,7 +220,7 @@ const DashboardChefeEmpresa: React.FC = () => {
         {/* Estatísticas Detalhadas */}
         <div className="card p-6 fade-in" style={{ animationDelay: '0.4s' }}>
           <h2 className="text-lg font-semibold text-cursor-text-primary mb-4">Estatísticas Detalhadas</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-cursor-background-light rounded-lg card-transition">
               <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Total de Candidaturas</h3>
               <p className="text-2xl font-bold text-cursor-primary">
@@ -241,12 +233,6 @@ const DashboardChefeEmpresa: React.FC = () => {
                 {loading ? '-' : oportunidades.length > 0 ? 
                   (oportunidades.reduce((acc, op) => acc + (op.total_recomendacoes || 0), 0) / oportunidades.length).toFixed(1) : '0'
                 }
-              </p>
-            </div>
-            <div className="p-4 bg-cursor-background-light rounded-lg card-transition">
-              <h3 className="text-sm font-medium text-cursor-text-secondary mb-1">Jovens Contratados</h3>
-              <p className="text-2xl font-bold text-cursor-primary">
-                {loading ? '-' : jovensContratados.length}
               </p>
             </div>
           </div>

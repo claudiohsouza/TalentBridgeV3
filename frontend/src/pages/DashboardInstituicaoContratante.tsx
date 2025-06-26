@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { jovemService, oportunidadeService, recomendacaoService } from '../services/api';
 import { Jovem, Oportunidade, Recomendacao } from '../types';
+import { FaEye, FaUserCheck, FaUserTimes, FaClock, FaChartLine, FaUsers, FaBriefcase, FaHandshake, FaTimes, FaUser, FaGraduationCap, FaBrain, FaHeart, FaMapMarkerAlt, FaCalendar, FaCheck, FaTrophy, FaSpinner, FaStar, FaBookmark, FaAward, FaBuilding, FaRocket, FaLightbulb, FaGem, FaExclamationTriangle, FaSync, FaCode, FaBullseye } from 'react-icons/fa';
 
 interface Stats {
   jovensRecomendados: number;
   oportunidadesAtivas: number;
   contratacoesRealizadas: number;
 }
+
+
 
 // Função para formatar a formação
 const formatarFormacao = (formacao: string): string => {
@@ -21,77 +24,88 @@ const formatarFormacao = (formacao: string): string => {
   return formatacoes[formacao] || formacao;
 };
 
-// Novo componente para gerenciar o status da recomendação
 const StatusContratacao: React.FC<{ recomendacao: Partial<Recomendacao>, onStatusChange: () => void }> = ({ recomendacao, onStatusChange }) => {
   const [loading, setLoading] = useState(false);
-
+  
   const handleUpdateStatus = async (novoStatus: 'em_processo' | 'contratado' | 'rejeitado') => {
-    if (!recomendacao.id) return; // Garante que o ID existe
-
-    console.log('[StatusContratacao] Tentando atualizar status:', {
-      recomendacaoId: recomendacao.id,
-      novoStatus,
-      recomendacaoData: recomendacao
-    });
-
+    if (!recomendacao.id) return;
+    
     setLoading(true);
     try {
       await recomendacaoService.atualizarStatusRecomendacao(recomendacao.id, novoStatus);
-      console.log('[StatusContratacao] Status atualizado com sucesso');
       onStatusChange();
     } catch (error) {
-      console.error("[StatusContratacao] Erro ao atualizar status:", error);
+      console.error('Erro ao atualizar status:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const renderStatusBadge = () => {
-    const status = recomendacao.status as Recomendacao['status']; // Type assertion
-    switch (status) {
-      case 'pendente': return <span className="badge badge-warning">Pendente</span>;
-      case 'em_processo': return <span className="badge badge-info">Em Processo</span>;
-      case 'contratado': return <span className="badge badge-success">Contratado</span>;
-      case 'rejeitado': return <span className="badge badge-error">Rejeitado</span>;
-      default: return <span className="badge">{status}</span>;
-    }
-  };
-  
-  const renderAcoes = () => {
-    if (loading) {
-      return <div className="spinner-sm"></div>;
-    }
-    const status = recomendacao.status as Recomendacao['status']; // Type assertion
-    switch (status) {
+    switch (recomendacao.status) {
       case 'pendente':
-        return (
-          <>
-            <button onClick={() => handleUpdateStatus('em_processo')} className="btn-sm btn-primary">Iniciar Processo</button>
-            <button onClick={() => handleUpdateStatus('rejeitado')} className="btn-sm btn-secondary">Rejeitar</button>
-          </>
-        );
+        return <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200"><FaClock className="w-3 h-3" />Pendente</span>;
       case 'em_processo':
-        return (
-          <>
-            <button onClick={() => handleUpdateStatus('contratado')} className="btn-sm btn-primary">Marcar Contratado</button>
-            <button onClick={() => handleUpdateStatus('rejeitado')} className="btn-sm btn-secondary">Rejeitar</button>
-          </>
-        );
+        return <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"><FaSpinner className="w-3 h-3 animate-spin" />Em Processo</span>;
       case 'contratado':
+        return <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><FaCheck className="w-3 h-3" />Contratado</span>;
       case 'rejeitado':
-        return null; // Nenhuma ação disponível
+        return <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><FaTimes className="w-3 h-3" />Rejeitado</span>;
       default:
-        return null;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">Indefinido</span>;
     }
   };
 
-  return (
-    <div className="bg-cursor-background-light p-3 rounded-lg flex items-center justify-between gap-4">
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-cursor-text-primary truncate">{recomendacao.oportunidade_titulo || 'Oportunidade'}</p>
+  const renderAcoes = () => {
+    if (recomendacao.status === 'contratado' || recomendacao.status === 'rejeitado') {
+      return <div className="text-xs text-cursor-text-tertiary font-medium">Status final</div>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {recomendacao.status === 'pendente' && (
+          <button
+            onClick={() => handleUpdateStatus('em_processo')}
+            disabled={loading}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 font-medium shadow-sm hover:shadow-md"
+          >
+            <FaClock className="w-3 h-3" />
+            Processar
+          </button>
+        )}
+        
+        {(recomendacao.status === 'pendente' || recomendacao.status === 'em_processo') && (
+          <>
+            <button
+              onClick={() => handleUpdateStatus('contratado')}
+              disabled={loading}
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 font-medium shadow-sm hover:shadow-md"
+            >
+              <FaUserCheck className="w-3 h-3" />
+              Contratar
+            </button>
+            <button
+              onClick={() => handleUpdateStatus('rejeitado')}
+              disabled={loading}
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 font-medium shadow-sm hover:shadow-md"
+            >
+              <FaUserTimes className="w-3 h-3" />
+              Rejeitar
+            </button>
+          </>
+        )}
       </div>
-      <div className="flex items-center gap-3 flex-shrink-0">
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-cursor-text-secondary">Status:</span>
         {renderStatusBadge()}
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-cursor-text-secondary">Ações:</span>
         {renderAcoes()}
       </div>
     </div>
@@ -101,68 +115,65 @@ const StatusContratacao: React.FC<{ recomendacao: Partial<Recomendacao>, onStatu
 const DashboardInstituicaoContratante: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [jovens, setJovens] = useState<Jovem[]>([]);
-  const [oportunidades, setOportunidades] = useState<Oportunidade[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats>({
     jovensRecomendados: 0,
     oportunidadesAtivas: 0,
-    contratacoesRealizadas: 0,
+    contratacoesRealizadas: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedArea, setSelectedArea] = useState<string>('todas');
-
-  // Modal states
-  const [showJovemModal, setShowJovemModal] = useState(false);
+  const [jovens, setJovens] = useState<Jovem[]>([]);
+  const [filteredJovens, setFilteredJovens] = useState<Jovem[]>([]);
+  const [oportunidades, setOportunidades] = useState<Oportunidade[]>([]);
   const [selectedJovem, setSelectedJovem] = useState<Jovem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const forceRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
-    console.log('[DashboardInstituicaoContratante] User role:', user?.papel);
-    console.log('[DashboardInstituicaoContratante] User data:', user);
-    fetchData();
-  }, [user]);
-
-  // Efeito para sincronizar o jovem selecionado no modal com a lista principal
-  useEffect(() => {
-    if (selectedJovem && jovens.length > 0) {
-      const jovemAtualizado = jovens.find(j => j.id === selectedJovem.id);
-      if (jovemAtualizado && JSON.stringify(jovemAtualizado) !== JSON.stringify(selectedJovem)) {
-        setSelectedJovem(jovemAtualizado);
-      }
+    if (user?.papel !== 'instituicao_contratante') {
+      console.error('Usuário não autorizado para este dashboard');
+      navigate('/');
+      return;
     }
-  }, [jovens, selectedJovem]);
+    fetchData();
+  }, [user, navigate]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // Buscar jovens com pontuação já calculada pelo backend
+      
       const jovensData = await jovemService.listarJovensRecomendados();
-      setJovens(jovensData);
-
-      // Buscar todas as recomendações para contar as contratações
-      const recomendacoesResult = await recomendacaoService.listarRecomendacoes();
-      const todasRecomendacoes = recomendacoesResult.data || [];
-      const contratacoes = todasRecomendacoes.filter((rec: Recomendacao) => rec.status === 'contratado').length;
-
-      // Buscar oportunidades
-      const oportunidadesData = await oportunidadeService.listarOportunidades();
-      setOportunidades(oportunidadesData);
-
+      console.log('Dados dos jovens recomendados:', jovensData);
+      
+      // Ordenar por nome por padrão
+      const sortedJovens = jovensData.sort((a, b) => a.nome.localeCompare(b.nome));
+      
+      setJovens(sortedJovens);
+      setFilteredJovens(sortedJovens);
+      
       // Calcular estatísticas
-      const oportunidadesAtivas = oportunidadesData.length;
-
+      const totalRecomendados = jovensData.length;
+      const totalContratados = jovensData.filter(j => j.status === 'aprovado' || j.status === 'Aprovado').length;
+      
       setStats({
-        jovensRecomendados: jovensData.length,
-        oportunidadesAtivas,
-        contratacoesRealizadas: contratacoes,
+        jovensRecomendados: totalRecomendados,
+        oportunidadesAtivas: jovensData.reduce((acc, j) => {
+          const oportunidadesUnicas = new Set(j.recomendacoes?.map((r: any) => r.oportunidade_id) || []);
+          return acc + oportunidadesUnicas.size;
+        }, 0),
+        contratacoesRealizadas: totalContratados
       });
-
-    } catch (error: any) {
+      
+    } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      setError('Erro ao carregar dados. Por favor, tente novamente.');
+      setError('Erro ao carregar os dados. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -170,392 +181,477 @@ const DashboardInstituicaoContratante: React.FC = () => {
 
   const handleJovemClick = (jovem: Jovem) => {
     setSelectedJovem(jovem);
-    setShowJovemModal(true);
-  };
-
-  const filteredJovens = jovens.filter(jovem => {
-    const matchesSearch = jovem.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         jovem.formacao.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesArea = selectedArea === 'todas' || 
-                       (jovem.habilidades && jovem.habilidades.some(h => h.toLowerCase().includes(selectedArea.toLowerCase())));
-    return matchesSearch && matchesArea;
-  });
-
-  const getGradientClass = (index: number) => {
-    const gradients = [
-      'from-blue-500/20 to-purple-500/20',
-      'from-green-500/20 to-blue-500/20',
-      'from-purple-500/20 to-pink-500/20',
-      'from-orange-500/20 to-red-500/20',
-      'from-teal-500/20 to-cyan-500/20'
-    ];
-    return gradients[index % gradients.length];
+    setIsModalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Aberta': return 'bg-green-100 text-green-800';
-      case 'Fechada': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ativo':
+      case 'Ativo': return 'text-cursor-success';
+      case 'pendente':
+      case 'Pendente': return 'text-cursor-warning';
+      case 'aprovado':
+      case 'Aprovado': return 'text-cursor-primary';
+      default: return 'text-cursor-text-secondary';
     }
   };
 
   const renderJovemModal = () => {
-    if (!selectedJovem) return null;
+    if (!selectedJovem || !isModalOpen) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 fade-in">
-        <div className="bg-cursor-background-light rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto card-transition">
-          <div className="p-6 border-b border-cursor-border">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-cursor-text-primary">Perfil do Jovem</h2>
-              <button 
-                onClick={() => setShowJovemModal(false)}
-                className="text-cursor-text-tertiary hover:text-cursor-text-primary transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-cursor-background-card border border-cursor-border rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-cursor-text-primary">{selectedJovem.nome}</h2>
+              <p className="text-cursor-text-secondary">{selectedJovem.email}</p>
             </div>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="text-cursor-text-secondary hover:text-cursor-text-primary transition-colors p-2"
+            >
+              <FaTimes className="w-6 h-6" />
+            </button>
           </div>
 
-          <div className="p-8">
-            {/* Informações Básicas */}
-            <div className="flex items-center space-x-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cursor-primary to-cursor-secondary flex items-center justify-center text-white font-bold text-2xl">
-                {selectedJovem.nome.charAt(0).toUpperCase()}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Informações Pessoais */}
+            <div className="bg-cursor-background rounded-xl p-5 border border-cursor-border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-cursor-primary/20 rounded-lg">
+                  <FaUser className="w-5 h-5 text-cursor-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-cursor-text-primary">Informações Pessoais</h3>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-cursor-text-primary">{selectedJovem.nome}</h3>
-                <p className="text-cursor-text-secondary">{selectedJovem.email}</p>
-                <p className="text-cursor-text-secondary">{formatarFormacao(selectedJovem.formacao)}</p>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-cursor-text-secondary">Idade:</span>
+                  <span className="ml-2 text-cursor-text-primary">{selectedJovem.idade} anos</span>
+                </div>
+                <div>
+                  <span className="text-sm text-cursor-text-secondary">Formação:</span>
+                  <span className="ml-2 text-cursor-text-primary">{formatarFormacao(selectedJovem.formacao || '')}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-cursor-text-secondary">Curso:</span>
+                  <span className="ml-2 text-cursor-text-primary">{selectedJovem.curso || 'Não especificado'}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-cursor-text-secondary">Status:</span>
+                  <span className={`ml-2 capitalize font-medium ${getStatusColor(selectedJovem.status || 'disponivel')}`}>
+                    {selectedJovem.status === 'ativo' || selectedJovem.status === 'Ativo' ? 'Disponível' : 
+                     selectedJovem.status === 'pendente' || selectedJovem.status === 'Pendente' ? 'Em Processo' : 
+                     selectedJovem.status === 'aprovado' || selectedJovem.status === 'Aprovado' ? 'Contratado' : 'Não especificado'}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Habilidades */}
-            {selectedJovem.habilidades && selectedJovem.habilidades.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold text-cursor-text-primary mb-3">Habilidades</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedJovem.habilidades.map((habilidade, idx) => (
-                    <span key={idx} className="badge badge-primary">
-                      {habilidade}
-                    </span>
-                  ))}
+            <div className="bg-cursor-background rounded-xl p-5 border border-cursor-border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-cursor-secondary/20 rounded-lg">
+                  <FaCode className="w-5 h-5 text-cursor-secondary" />
                 </div>
+                <h3 className="text-lg font-semibold text-cursor-text-primary">Habilidades</h3>
               </div>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {selectedJovem.habilidades?.length ? selectedJovem.habilidades.map((habilidade, index) => (
+                  <span key={index} className="px-3 py-1 bg-cursor-primary/20 text-cursor-primary text-sm rounded-full border border-cursor-primary/30">
+                    {habilidade}
+                  </span>
+                )) : (
+                  <span className="text-cursor-text-secondary text-sm">Nenhuma habilidade registrada</span>
+                )}
+              </div>
+            </div>
 
             {/* Interesses */}
-            {selectedJovem.interesses && selectedJovem.interesses.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold text-cursor-text-primary mb-3">Interesses</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedJovem.interesses.map((interesse, idx) => (
-                    <span key={idx} className="badge badge-secondary">
-                      {interesse}
-                    </span>
-                  ))}
+            <div className="bg-cursor-background rounded-xl p-5 border border-cursor-border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <FaHeart className="w-5 h-5 text-purple-500" />
                 </div>
+                <h3 className="text-lg font-semibold text-cursor-text-primary">Interesses</h3>
               </div>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {selectedJovem.interesses?.length ? selectedJovem.interesses.map((interesse, index) => (
+                  <span key={index} className="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm rounded-full border border-purple-500/30">
+                    {interesse}
+                  </span>
+                )) : (
+                  <span className="text-cursor-text-secondary text-sm">Nenhum interesse registrado</span>
+                )}
+              </div>
+            </div>
 
             {/* Planos Futuros */}
-            {selectedJovem.planos_futuros && (
-              <div>
-                <h4 className="text-lg font-semibold text-cursor-text-primary mb-3">Planos Futuros</h4>
-                <p className="text-cursor-text-secondary">{selectedJovem.planos_futuros}</p>
+            <div className="bg-cursor-background rounded-xl p-5 border border-cursor-border">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-cursor-warning/20 rounded-lg">
+                  <FaBullseye className="w-5 h-5 text-cursor-warning" />
+                </div>
+                <h3 className="text-lg font-semibold text-cursor-text-primary">Planos Futuros</h3>
               </div>
-            )}
-
-            {/* Recomendações */}
-            <h4 className="text-lg font-bold text-cursor-text-primary mt-8 mb-4">Recomendações Recebidas</h4>
-            <div className="space-y-4">
-              {selectedJovem.recomendacoes && selectedJovem.recomendacoes.length > 0 ? (
-                selectedJovem.recomendacoes.map(rec => (
-                  <StatusContratacao
-                    key={rec.id}
-                    recomendacao={{
-                      id: rec.id,
-                      status: rec.status,
-                      oportunidade_titulo: rec.oportunidade_titulo
-                    }}
-                    onStatusChange={fetchData}
-                  />
-                ))
-              ) : (
-                <p className="text-cursor-text-tertiary text-sm">Nenhuma recomendação encontrada para este jovem.</p>
-              )}
+              <p className="text-cursor-text-secondary text-sm">
+                {selectedJovem.planos_futuros || 'Nenhum plano futuro especificado'}
+              </p>
             </div>
+          </div>
+
+          {/* Recomendações */}
+          <div className="mt-6 bg-cursor-background rounded-xl p-5 border border-cursor-border">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-cursor-success/20 rounded-lg">
+                <FaStar className="w-5 h-5 text-cursor-success" />
+              </div>
+              <h3 className="text-lg font-semibold text-cursor-text-primary">Recomendações Ativas</h3>
+            </div>
+            
+            {selectedJovem.recomendacoes && selectedJovem.recomendacoes.length > 0 ? (
+              <div className="space-y-4">
+                {selectedJovem.recomendacoes.map((recomendacao, index) => (
+                  <div key={index} className="bg-cursor-background-light rounded-lg p-4 border border-cursor-border">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-medium text-cursor-text-primary">{recomendacao.oportunidade_titulo}</h4>
+                        <p className="text-sm text-cursor-text-secondary mt-1">ID da Oportunidade: {recomendacao.oportunidade_id}</p>
+                      </div>
+                      <StatusContratacao 
+                        recomendacao={recomendacao} 
+                        onStatusChange={forceRefresh}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-cursor-text-secondary text-sm">Nenhuma recomendação ativa para este jovem</p>
+            )}
           </div>
         </div>
       </div>
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-cursor-background via-cursor-background-light to-cursor-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner rounded-full h-12 w-12 border-b-2 border-cursor-primary mx-auto mb-4"></div>
-          <p className="text-cursor-text-secondary">Carregando talentos...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cursor-background via-cursor-background-light to-cursor-background page-transition">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header Moderno */}
-        <div className="text-center mb-12 fade-in">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-cursor-primary via-purple-500 to-cursor-secondary bg-clip-text text-transparent">
-              Encontre Talentos Excepcionais
-            </span>
-          </h1>
-          <p className="text-xl text-cursor-text-secondary max-w-3xl mx-auto">
-            Conecte-se com jovens recomendados que combinam perfeitamente com suas oportunidades
-          </p>
+    <div className="min-h-screen bg-cursor-background py-8 px-4 sm:px-6 lg:px-8 page-transition">
+      {/* Hero Section */}
+      <section className="relative mb-12 overflow-hidden">
+        {/* Background gradients */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cursor-primary/10 rounded-full blur-3xl opacity-20"></div>
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-cursor-secondary/10 rounded-full blur-3xl opacity-20"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl opacity-20"></div>
         </div>
-
-        {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="card p-6 text-center hover:border-cursor-primary transition-all duration-300 card-transition stagger-item group">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-cursor-primary/20 to-purple-500/20 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-              <svg className="w-8 h-8 text-cursor-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div className="text-3xl font-bold text-cursor-text-primary mb-2">{stats.jovensRecomendados}</div>
-            <div className="text-cursor-text-secondary">Jovens Recomendados</div>
-          </div>
-
-          <div className="card p-6 text-center hover:border-cursor-secondary transition-all duration-300 card-transition stagger-item group">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-cursor-secondary/20 to-blue-500/20 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-              <svg className="w-8 h-8 text-cursor-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="text-3xl font-bold text-cursor-text-primary mb-2">{stats.oportunidadesAtivas}</div>
-            <div className="text-cursor-text-secondary">Oportunidades Ativas</div>
-          </div>
-
-          <div className="card p-6 text-center hover:border-purple-500 transition-all duration-300 card-transition stagger-item group">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
-              <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="text-3xl font-bold text-cursor-text-primary mb-2">{stats.contratacoesRealizadas}</div>
-            <div className="text-cursor-text-secondary">Contratações Realizadas</div>
-          </div>
-        </div>
-
-        {/* Filtros e Busca */}
-        <div className="card p-6 mb-8 fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-              <input
-                type="text"
-                  placeholder="Buscar por nome ou formação..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field w-full pl-10"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-cursor-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-            <div className="md:w-48">
-              <select
-                value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
-                className="input-field w-full"
-              >
-                <option value="todas">Todas as áreas</option>
-                <option value="tecnologia">Tecnologia</option>
-                <option value="marketing">Marketing</option>
-                <option value="administração">Administração</option>
-                <option value="engenharia">Engenharia</option>
-                <option value="rh">Recursos Humanos</option>
-              </select>
-            </div>
-              </div>
-              </div>
-
-        {/* Seção de Jovens Recomendados */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-cursor-text-primary mb-6 fade-in" style={{ animationDelay: '0.3s' }}>
-            <span className="bg-gradient-to-r from-cursor-primary to-cursor-secondary bg-clip-text text-transparent">
-              Jovens em Destaque
-            </span>
-          </h2>
-
-          {filteredJovens.length === 0 ? (
-            <div className="text-center py-12 fade-in" style={{ animationDelay: '0.4s' }}>
-              <div className="h-24 w-24 mx-auto mb-4 text-cursor-text-tertiary">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" 
-                    />
-                  </svg>
+        
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="text-center fade-in">
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-6">
+              <span className="bg-gradient-to-r from-cursor-primary via-purple-500 to-cursor-secondary bg-clip-text text-transparent">
+                Centro de Talentos
+              </span>
+            </h1>
+            <p className="text-xl text-cursor-text-secondary max-w-3xl mx-auto mb-8">
+              Descubra jovens excepcionais recomendados por instituições parceiras
+            </p>
+            
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              <div className="bg-cursor-background-card/50 backdrop-blur-xl border border-cursor-border rounded-2xl p-6 hover:border-cursor-primary/50 transition-all duration-300 card-transition stagger-item">
+                <div className="text-3xl font-bold text-cursor-text-primary mb-2">
+                  {loading ? '...' : stats.jovensRecomendados}
                 </div>
-                <h3 className="text-lg font-medium text-cursor-text-primary mb-2">
-                Nenhum jovem encontrado
-                </h3>
-              <p className="text-cursor-text-secondary">
-                Tente ajustar os filtros de busca
-                </p>
+                <div className="text-cursor-text-secondary">Jovens Recomendados</div>
               </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredJovens.map((jovem, index) => (
-                <div
-                  key={jovem.id}
-                  className={`card p-6 hover:border-cursor-primary transition-all duration-300 cursor-pointer card-transition stagger-item group bg-gradient-to-br ${getGradientClass(index)}`}
-                  style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-                  onClick={() => handleJovemClick(jovem)}
-                >
-                  {/* Avatar e Informações Básicas */}
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cursor-primary to-cursor-secondary flex items-center justify-center text-white font-bold text-xl group-hover:scale-110 transition-transform">
-                      {jovem.nome.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{jovem.nome}</h3>
-                      <p className="text-sm text-gray-300">{formatarFormacao(jovem.formacao)}</p>
-                    </div>
-                  </div>
+              
+              <div className="bg-cursor-background-card/50 backdrop-blur-xl border border-cursor-border rounded-2xl p-6 hover:border-cursor-secondary/50 transition-all duration-300 card-transition stagger-item">
+                <div className="text-3xl font-bold text-cursor-text-primary mb-2">
+                  {loading ? '...' : stats.oportunidadesAtivas}
+                </div>
+                <div className="text-cursor-text-secondary">Oportunidades Ativas</div>
+              </div>
+              
+              <div className="bg-cursor-background-card/50 backdrop-blur-xl border border-cursor-border rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300 card-transition stagger-item">
+                <div className="text-3xl font-bold text-cursor-text-primary mb-2">
+                  {loading ? '...' : stats.contratacoesRealizadas}
+                </div>
+                <div className="text-cursor-text-secondary">Contratações Realizadas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                  {/* Habilidades Principais */}
-                  <div className="mb-4">
-                    <p className="text-xs font-semibold text-cursor-text-secondary mb-2 uppercase tracking-wider">
-                      Habilidades Principais
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {jovem.habilidades && jovem.habilidades.length > 0 && (
-                        jovem.habilidades.slice(0, 3).map((habilidade, idx) => (
-                          <span
-                            key={idx}
-                            className="badge badge-primary text-xs px-2 py-1"
-                          >
-                            {habilidade}
-                          </span>
-                        ))
-                      )}
-                      {jovem.habilidades && jovem.habilidades.length > 3 && (
-                        <span className="text-cursor-text-tertiary text-xs">
-                          +{jovem.habilidades.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Recomendações */}
-                  {jovem.recomendacoes && jovem.recomendacoes.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-xs font-semibold text-cursor-text-secondary mb-2 uppercase tracking-wider">
-                        Recomendado para
-                      </p>
-                      <div className="space-y-1">
-                        {jovem.recomendacoes.slice(0, 2).map((rec, idx) => (
-                          <div key={idx} className="text-sm text-cursor-text-primary bg-cursor-background-light/50 p-2 rounded">
-                            {rec.oportunidade_titulo || 'Vaga não especificada'}
-                          </div>
-                        ))}
+      {/* Seção Jovens em Destaque */}
+      <section className="relative mb-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-cursor-background-card border border-cursor-border rounded-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-cursor-text-primary flex items-center gap-2">
+                <FaTrophy className="w-6 h-6 text-amber-500" />
+                Talentos em Destaque
+              </h2>
+              <span className="text-sm text-cursor-text-secondary">
+                Jovens disponíveis com maiores pontuações
+              </span>
+            </div>
+            
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-cursor-background rounded-xl p-6 border border-cursor-border animate-pulse">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-16 h-16 bg-cursor-background-light rounded-full"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-cursor-background-light rounded w-3/4"></div>
+                        <div className="h-3 bg-cursor-background-light rounded w-1/2"></div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Botão de Contato */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleJovemClick(jovem);
-                    }}
-                    className="w-full btn-primary mt-4 group-hover:bg-cursor-primary-dark transition-colors"
-                  >
-                    <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                    Entrar em Contato
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Seção de Oportunidades */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-cursor-text-primary mb-6 fade-in" style={{ animationDelay: '0.5s' }}>
-            <span className="bg-gradient-to-r from-cursor-secondary to-purple-500 bg-clip-text text-transparent">
-              Oportunidades Disponíveis
-            </span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {oportunidades.slice(0, 6).map((oportunidade, index) => (
-              <div
-                key={oportunidade.id}
-                className="card p-6 hover:border-cursor-secondary transition-all duration-300 card-transition stagger-item group"
-                style={{ animationDelay: `${0.6 + index * 0.1}s` }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-cursor-text-primary group-hover:text-cursor-secondary transition-colors">
-                      {oportunidade.titulo}
-                </h3>
-                    <p className="text-sm text-cursor-text-secondary">{oportunidade.empresa_nome}</p>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-cursor-background-light rounded w-full"></div>
+                      <div className="h-3 bg-cursor-background-light rounded w-2/3"></div>
+                    </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(oportunidade.status)}`}>
-                    {oportunidade.status}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-cursor-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-sm text-cursor-text-secondary">{oportunidade.tipo}</span>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-cursor-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span className="text-sm text-cursor-text-secondary">{oportunidade.area}</span>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-cursor-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span className="text-sm text-cursor-text-secondary">
-                      {oportunidade.total_recomendacoes || 0} recomendações
-                    </span>
-                  </div>
-                </div>
-
-                <button className="w-full btn-secondary mt-4 group-hover:bg-cursor-secondary-dark transition-colors">
-                  Ver Detalhes
-                </button>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredJovens
+                  .filter(jovem => jovem.status === 'ativo' || jovem.status === 'Ativo' || jovem.status === 'pendente' || jovem.status === 'Pendente')
+                  .sort((a, b) => (b.pontuacao_desenvolvimento || 0) - (a.pontuacao_desenvolvimento || 0))
+                  .slice(0, 3)
+                  .map((jovem, index) => (
+                    <div
+                      key={jovem.id}
+                      className="bg-gradient-to-br from-cursor-background via-cursor-background to-cursor-background-light border-2 border-amber-500/30 rounded-xl p-6 hover:border-amber-500/60 transition-all duration-300 cursor-pointer group relative overflow-hidden"
+                      onClick={() => handleJovemClick(jovem)}
+                    >
+                      {/* Badge de destaque */}
+                      <div className="absolute top-4 right-4">
+                        <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                          <FaStar className="w-3 h-3" />
+                          #{index + 1}
+                        </div>
+                      </div>
+                      
+                      {/* Header do jovem */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <FaUser className="w-7 h-7 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-lg text-cursor-text-primary truncate">{jovem.nome}</h3>
+                          <p className="text-sm text-cursor-text-secondary">{formatarFormacao(jovem.formacao || '')}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1">
+                              <FaTrophy className="w-3 h-3 text-amber-500" />
+                                                             <span className="text-sm font-semibold text-amber-500">
+                                 {Number(jovem.pontuacao_desenvolvimento || 0).toFixed(1)}/5.0
+                               </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Habilidades principais */}
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-cursor-text-secondary mb-2 uppercase tracking-wider">Principais Habilidades</p>
+                        <div className="flex flex-wrap gap-2">
+                          {jovem.habilidades?.slice(0, 4).map((habilidade, i) => (
+                            <span key={i} className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full border border-amber-500/30 font-medium">
+                              {habilidade}
+                            </span>
+                          ))}
+                          {jovem.habilidades && jovem.habilidades.length > 4 && (
+                            <span className="px-2 py-1 bg-cursor-text-tertiary/20 text-cursor-text-tertiary text-xs rounded-full">
+                              +{jovem.habilidades.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Recomendações ativas */}
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-cursor-text-secondary mb-2 uppercase tracking-wider">Status</p>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm font-medium capitalize ${getStatusColor(jovem.status || 'ativo')}`}>
+                            {jovem.status === 'ativo' || jovem.status === 'Ativo' ? 'Disponível' : 
+                             jovem.status === 'pendente' || jovem.status === 'Pendente' ? 'Em Processo' : 
+                             jovem.status === 'aprovado' || jovem.status === 'Aprovado' ? 'Contratado' : 'Disponível'}
+                          </span>
+                          <span className="text-xs text-cursor-text-tertiary">
+                            {jovem.recomendacoes?.length || 0} recomendações
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Call to action */}
+                      <div className="pt-3 border-t border-cursor-border">
+                        <button className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-lg">
+                          <FaEye className="w-4 h-4" />
+                          Ver Perfil Completo
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                
+                {/* Caso não haja jovens em destaque */}
+                {filteredJovens.filter(jovem => jovem.status === 'ativo' || jovem.status === 'Ativo' || jovem.status === 'pendente' || jovem.status === 'Pendente').length === 0 && !loading && (
+                  <div className="col-span-full text-center py-8">
+                    <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaTrophy className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h3 className="text-lg font-medium text-cursor-text-primary mb-2">Nenhum talento disponível</h3>
+                    <p className="text-cursor-text-secondary">
+                      Jovens disponíveis com as melhores pontuações aparecerão aqui
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Modal de Detalhes do Jovem */}
-      {showJovemModal && selectedJovem && renderJovemModal()}
+      <div className="max-w-7xl mx-auto">
+        {/* Lista de Jovens - Agora ocupa toda a largura */}
+        <div>
+            <div className="bg-cursor-background-card border border-cursor-border rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-cursor-text-primary flex items-center gap-2">
+                  <FaGem className="w-6 h-6 text-cursor-primary" />
+                  Talentos Recomendados ({filteredJovens.length})
+                </h2>
+                <button
+                  onClick={() => fetchData()}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-cursor-primary hover:bg-cursor-primary-dark text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <FaSync className="w-4 h-4" />
+                  )}
+                  Atualizar
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-cursor-background rounded-xl p-6 border border-cursor-border animate-pulse">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-cursor-background-light rounded-full"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-cursor-background-light rounded w-3/4"></div>
+                          <div className="h-3 bg-cursor-background-light rounded w-1/2"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-cursor-error/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FaExclamationTriangle className="w-8 h-8 text-cursor-error" />
+                  </div>
+                  <h3 className="text-lg font-medium text-cursor-text-primary mb-2">Erro ao Carregar</h3>
+                  <p className="text-cursor-text-secondary mb-4">{error}</p>
+                  <button
+                    onClick={() => fetchData()}
+                    className="px-6 py-2 bg-cursor-primary hover:bg-cursor-primary-dark text-white rounded-lg transition-colors"
+                  >
+                    Tentar Novamente
+                  </button>
+                </div>
+              ) : filteredJovens.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-cursor-text-tertiary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FaUsers className="w-8 h-8 text-cursor-text-tertiary" />
+                  </div>
+                  <h3 className="text-lg font-medium text-cursor-text-primary mb-2">Nenhum talento encontrado</h3>
+                  <p className="text-cursor-text-secondary">
+                    Ainda não há jovens recomendados disponíveis
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredJovens.map((jovem, index) => (
+                    <div
+                      key={jovem.id}
+                      className="bg-cursor-background border border-cursor-border rounded-xl p-6 hover:border-cursor-primary/50 transition-all duration-300 cursor-pointer group card-transition h-fit"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                      onClick={() => handleJovemClick(jovem)}
+                    >
+                      {/* Header compacto */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-cursor-primary to-cursor-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                          <FaUser className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base text-cursor-text-primary truncate">{jovem.nome}</h3>
+                          <p className="text-sm text-cursor-text-secondary">{formatarFormacao(jovem.formacao || '')}</p>
+                        </div>
+                      </div>
+
+                      {/* Habilidades (máximo 3 + contador) */}
+                      <div className="mb-4">
+                        <div className="flex flex-wrap gap-1">
+                          {jovem.habilidades?.slice(0, 3).map((habilidade, i) => (
+                            <span key={i} className="px-2 py-1 bg-cursor-primary/20 text-cursor-primary text-xs rounded-full border border-cursor-primary/30">
+                              {habilidade}
+                            </span>
+                          ))}
+                          {jovem.habilidades && jovem.habilidades.length > 3 && (
+                            <span className="px-2 py-1 bg-cursor-text-tertiary/20 text-cursor-text-tertiary text-xs rounded-full">
+                              +{jovem.habilidades.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Recomendações (somente 1 + contador) */}
+                      <div className="mb-4">
+                        <p className="text-xs text-cursor-text-secondary mb-2">RECOMENDAÇÕES</p>
+                        {jovem.recomendacoes && jovem.recomendacoes.length > 0 ? (
+                          <div className="space-y-2">
+                            <div className="text-xs text-cursor-text-primary">
+                              {jovem.recomendacoes[0].oportunidade_titulo}
+                            </div>
+                            {jovem.recomendacoes.length > 1 && (
+                              <div className="text-xs text-cursor-text-tertiary">
+                                +{jovem.recomendacoes.length - 1} outras oportunidades
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-cursor-text-tertiary">Nenhuma recomendação ativa</div>
+                        )}
+                      </div>
+
+                      {/* Footer minimalista */}
+                      <div className="flex justify-between items-center pt-3 border-t border-cursor-border">
+                        <span className={`text-xs font-medium capitalize ${getStatusColor(jovem.status || 'disponivel')}`}>
+                          {jovem.status === 'ativo' || jovem.status === 'Ativo' ? 'Disponível' : 
+                           jovem.status === 'pendente' || jovem.status === 'Pendente' ? 'Em Processo' : 
+                           jovem.status === 'aprovado' || jovem.status === 'Aprovado' ? 'Contratado' : 'N/A'}
+                        </span>
+                        <button className="text-xs text-cursor-primary hover:text-cursor-primary-dark transition-colors flex items-center gap-1">
+                          Ver Perfil <FaEye className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+      {/* Modal */}
+      {renderJovemModal()}
     </div>
   );
 };
